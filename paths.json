@@ -1,0 +1,19 @@
+{
+   "/comps/both/*": [
+      "/comps/both/Both.ls",
+      "/comps/both/Button.ls",
+      "/comps/both/Icon.ls",
+      "/comps/both/Menu.ls",
+      "/comps/both/TextInput.ls"
+   ],
+   "/comps/main/!(OS.ls)": [
+      "/comps/main/Task.ls"
+   ],
+   "/comps/frme/*": [
+      "/comps/frme/Frme.ls"
+   ],
+   "/C/apps/*": [
+      "/C/apps/Test"
+   ],
+   "/C/!(apps)/**": []
+}

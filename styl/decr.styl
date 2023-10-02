@@ -1,0 +1,92 @@
+line-clamp()
+   -webkit-line-clamp arguments
+   line-clamp arguments
+
+text-security()
+   -webkit-text-security arguments
+   text-security arguments
+
+user-drag()
+   -webkit-user-drag arguments
+   user-drag arguments
+
+$gray0 = #f3f4f6
+$gray1 = #d1d5db
+$gray2 = #9ca3af
+$gray3 = #4b5563
+$gray4 = #1f2937
+
+$red0 = #ffe4e6
+$red1 = #fda4af
+$red2 = #f43f5e
+$red3 = #be123c
+$red4 = #881337
+
+$yellow0 = #fef3c7
+$yellow1 = #fcd34d
+$yellow2 = #f59e0b
+$yellow3 = #b45309
+$yellow4 = #78350f
+
+$green0 = #d1fae5
+$green1 = #6ee7b7
+$green2 = #10b981
+$green3 = #047857
+$green4 = #064e3b
+
+$blue0 = #dbeafe
+$blue1 = #93c5fd
+$blue2 = #3b82f6
+$blue3 = #1d4ed8
+$blue4 = #1e3a8a
+
+$white = #fff
+$black = #000
+
+$nonGrayColors = {
+   red: $red0 $red1 $red2 $red3 $red4
+   yellow: $yellow0 $yellow1 $yellow2 $yellow3 $yellow4
+   green: $green0 $green1 $green2 $green3 $green4
+   blue: $blue0 $blue1 $blue2 $blue3 $blue4
+}
+
+$colors = extend({
+   gray: $gray0 $gray1 $gray2 $gray3 $gray4
+}, $nonGrayColors)
+
+$spaces = 0 4px 8px 12px 16px 24px
+
+$sides1 = {
+    "": ""
+    l: -left
+    t: -top
+    r: -right
+    b: -bottom
+}
+$sides2 = {
+    "": ""
+    -l: -left
+    -t: -top
+    -r: -right
+    -b: -bottom
+}
+$sides3 = {
+    "": ("")
+    x: (-left -right)
+    y: (-top -bottom)
+    l: (-left)
+    t: (-top)
+    r: (-right)
+    b: (-bottom)
+}
+$sides4 = {
+    "": ("")
+    -x: (-left -right)
+    -y: (-top -bottom)
+    -l: (-left)
+    -t: (-top)
+    -r: (-right)
+    -b: (-bottom)
+}
+
+$shadow = 0 8px 15px -3px #0003, 0 4px 6px -4px #0008

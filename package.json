@@ -1,23 +1,23 @@
 {
-  "name": "oooos",
-  "version": "0.1.0",
-  "description": "Ò ó o o... hệ điều hành này mới nở mha",
-  "main": ".",
-  "scripts": {
-    "build": "ls2 build.ls"
-  },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/tientq64/oooos.git"
-  },
-  "keywords": [
-    "os",
-    "operating-system"
-  ],
-  "author": "tientq64",
-  "license": "MIT",
-  "bugs": {
-    "url": "https://github.com/tientq64/oooos/issues"
-  },
-  "homepage": "https://oooos.vercel.app"
+   "name": "oooos",
+   "version": "0.1.0",
+   "description": "Ò ó o o... hệ điều hành này mới nở mha",
+   "main": ".",
+   "scripts": {
+      "build": "ls2 build.ls"
+   },
+   "repository": {
+      "type": "git",
+      "url": "https://github.com/tientq64/oooos.git"
+   },
+   "keywords": [
+      "os",
+      "operating-system"
+   ],
+   "author": "tientq64",
+   "license": "MIT",
+   "bugs": {
+      "url": "https://github.com/tientq64/oooos/issues"
+   },
+   "homepage": "https://oooos.vercel.app"
 }

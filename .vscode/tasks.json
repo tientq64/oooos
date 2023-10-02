@@ -1,0 +1,17 @@
+{
+   "version": "2.0.0",
+   "tasks": [
+      {
+         "label": "build",
+         "type": "shell",
+         "command": "ls2 build.ls",
+         "presentation": {
+            "clear": true,
+            "close": true,
+            "reveal": "silent",
+            "revealProblems": "onProblem",
+            "showReuseMessage": false
+         }
+      }
+   ]
+}

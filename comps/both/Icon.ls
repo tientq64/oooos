@@ -1,26 +1,21 @@
 Icon = m.comp do
    onbeforeupdate: !->
-      {name} = @attrs
-      if /^\d+$/.test name
-         name = "flaticon:#name"
-      else if !name.includes \:
-         name = "fas:#name"
-      [kind, val] = name.split \:
-      @kind = kind
-      @val = switch kind
-         | \fa \fas \far \fad \fab => val
-         | \flaticon => "https://cdn-icons-png.flaticon.com/128/#{val.slice 0 -3}/#val.png"
-         else "#kind:#val"
+      [@kind, @val] = os.formatIconName @attrs.name
 
    view: ->
       switch @kind
-      | \fa \fas \far \fad \fab
-         m \.Icon.Icon--font,
-            class: m.class do
-               "#@kind fa-#@val"
-               @attrs.class
-      else
+      | \flaticon \https \http
          m \img.Icon.Icon--img,
             class: m.class do
                @attrs.class
             src: @val
+      | \blank
+         m \.Icon.Icon--blank,
+            class: m.class do
+               @attrs.class
+      else
+         m \.Icon.Icon--font,
+            class: m.class do
+               "Icon--compact": @attrs.compact
+               "#@kind fa-#@val"
+               @attrs.class

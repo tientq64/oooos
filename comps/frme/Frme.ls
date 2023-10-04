@@ -13,10 +13,13 @@ class Frme extends Both
 
    initFTFMethods: !->
       methodNames = <[
-         startListen
          initTaskFrme
+         mousedownFrme
+         startListen
+         showSubmenu
+         closeSubmenu
       ]>
-      for methodName in methodNames
+      for let methodName in methodNames
          method = (...args) ->
             @sendFTF methodName, ...args
          @[methodName] = method.bind @
@@ -25,6 +28,7 @@ class Frme extends Both
       @dom = vnode.dom
       @bodyEl = @dom.querySelector \.Frme-body
 
+      window.addEventListener \mousedown @onmousedownGlobal, yes
       window.addEventListener \message @onmessageGlobal
 
    addListener: (name, callback) !->
@@ -35,6 +39,11 @@ class Frme extends Both
       if listener = @listeners[name]
          index = listener.indexOf callback
          listener.splice index, 1
+
+   onmousedownGlobal: (event) !->
+      if event.isTrusted
+         eventData = event{clientX, clientY, screenX, screenY, buttons}
+         os.mousedownFrme eventData
 
    onmessageGlobal: (event) !->
       if data = event.data

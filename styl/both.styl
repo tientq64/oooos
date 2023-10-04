@@ -12,11 +12,24 @@ body
    margin: 0
    font-family: "Droid Sans", sans-serif
    line-height: 1.25
+   overflow: hidden
+   overflow-wrap: anywhere
+   color: $gray4
    user-select: none
    cursor: default
 
 img, a
    user-drag none
+
+p
+   margin: 0 8px
+
+for val, i in $fontSizes
+   h{i + 1}
+      font-size: val
+
+small
+   font-size: $fontSizes[5]
 
 .Icon
    width: 1.25em
@@ -31,6 +44,10 @@ img, a
    object-fit: contain
    image-rendering: -webkit-optimize-contrast
 
+.Icon--compact
+   width: unset
+   min-width: unset
+
 .Button
    height: 30px
    padding: 0 8px
@@ -42,6 +59,7 @@ img, a
    gap: 8px
    font: inherit
    background: #0000
+   color: $gray4
    box-shadow: inset 0 0 0 1px #0004
 
    &:hover
@@ -54,7 +72,7 @@ for k, val in $nonGrayColors
       box-shadow: inset 0 0 0 1px #0008
 
       &:hover
-            background: val[3]
+         background: val[3]
 
       &.Button--basic
          background: none
@@ -98,11 +116,83 @@ for k, val in $nonGrayColors
    border: 0
    font: inherit
    background: #0000
+   color: $gray4
    outline: 0
+
+   &::placeholder
+      color: $gray2
 
    &:has(+ .TextInput-rightIcon)
       margin-right: -28px
       padding-right: 36px
+
+.Menu
+   min-width: 120px
+   max-width: 480px
+   padding: 4px
+   border-radius: 6px
+   background: #fff
+   box-shadow: 0 0 0 1px #0004
+
+.Menu-item
+   min-height: 30px
+   padding: 4px 0
+   border-radius: 6px
+   display: flex
+   align-items: center
+
+   &:hover
+   &.active
+      background: #8884
+
+for k, val in $nonGrayColors
+   .Menu--{k}
+      color: val[2]
+
+      &:hover
+         background: val[2]
+         color: #fff
+
+      > .Menu-label
+         color: inherit
+
+.Menu-icon
+   margin-left: 8px
+   pointer-events: none
+
+.Menu-text
+   margin: 0 8px
+   flex: 1
+   pointer-events: none
+
+.Menu-label
+   margin: 0 12px 0 24px
+   font-size: 14px
+   color: #888
+   pointer-events: none
+
+.Menu-header
+   min-height: 34px
+   margin-top: 4px
+   padding: 4px 8px 0
+   border-top: 1px solid #0004
+   display: flex
+   align-items: center
+   font-size: 14px
+   font-weight: 700
+
+   &:first-child
+      min-height: 30px
+      margin-top: 0
+      padding-top: 0
+      border-top: 0
+
+.Menu-divider
+   margin: 4px 0
+   border-top: 1px solid #0004
+
+.Menu-submenu
+   width: max-content
 
 [[styl]]
 
@@ -111,6 +201,16 @@ for k, val in $nonGrayColors
       padding: 4px
       border: 1px solid #0004
       border-radius: 6px
+
+   for val in absolute relative fixed sticky
+      .{val}
+         position: val
+
+   for val in 0 25 50 75 100
+      .w-{val}
+         width: (val)%
+      .h-{val}
+         height: (val)%
 
    props = {
       m: margin
@@ -138,6 +238,12 @@ for k, val in $nonGrayColors
       border-radius: 9999px
    .rounded
       border-radius: 6px
+
+   for val in block inline-block inline flex inline-flex grid inline-grid table inline-table
+      .{val}
+         display: val
+   .hidden, [hidden]
+      display: none
 
    .row
       display: flex
@@ -183,6 +289,52 @@ for k, val in $nonGrayColors
          column-gap: val
       .gap-y-{i}
          row-gap: val
+
+   for val in auto visible hidden
+      .ov-{val}
+         overflow: val
+   for val in auto visible hidden
+      .ov-x-{val}
+         overflow-x: val
+      .ov-y-{val}
+         overflow-y: val
+
+   .font-sans
+      font-family: $sans
+   .font-serif
+      font-family: $serif
+   .font-mono
+      font-family: $mono
+
+   for i in 0 3 4 5 6 7 8
+      .lh-{i}
+         line-height: (i / 4)
+
+   for val, i in $fontSizes
+      .text-{i + 1}
+         font-size: val
+
+   .text-light
+      font-weight: 300
+   .text-regular
+      font-weight: 400
+   .text-medium
+      font-weight: 500
+   .text-semibold
+      font-weight: 600
+   .text-bold
+      font-weight: 700
+
+   .text-italic
+      font-style: italic
+   .text-no-italic
+      font-style: normal
+
+   for val in nowrap pre pre-line pre-wrap
+      .text-{val}
+         white-space: val
+   .text-wrap
+      white-space: normal
 
    .disabled
       opacity: .5

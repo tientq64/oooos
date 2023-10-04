@@ -17,6 +17,11 @@ class OS extends Task
 
       super app, env
 
+      @portalsEl = void
+
+      @submenuPopper = void
+      @submenuResolve = void
+
    oncreate: (vnode) !->
       super vnode
 
@@ -26,6 +31,8 @@ class OS extends Task
       for path in Paths\/C/apps/*
          name = @namePath path
          await @installApp \boot path, path, "/C/appData/#name"
+
+      @portalsEl = @dom.querySelector \.OS-portals
 
       window.addEventListener \resize @onresizeGlobal
       window.addEventListener \message @onmessageGlobal
@@ -106,3 +113,4 @@ class OS extends Task
                   m Button,
                      basic: yes
                      icon: \message
+            m \.OS-portals

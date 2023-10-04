@@ -189,30 +189,6 @@ class Task extends Both
          task = new Task app, env
          task.pid
 
-   sendTF: (name, ...args) !->
-      @postMessage do
-         type: \tf
-         name: name
-         args: args
-         \*
-
-   sendTA: (name, ...args) !->
-      @postMessage do
-         type: \ta
-         name: name
-         args: args
-         \*
-
-   initTaskFrme: ->
-      @tid = @randomUuid!
-      @postMessage = @frameEl.contentWindow~postMessage
-      tid: @tid
-
-   startListen: !->
-      if @listenedResolve
-         @listenedResolve!
-         @listenedResolve = void
-
    minimize: (val) !->
       val = Boolean val ? !@minimized
       @minimized = val
@@ -275,6 +251,80 @@ class Task extends Both
       @updateSize!
       @updateXY!
       @updateRectDom!
+
+   sendTF: (name, ...args) !->
+      @postMessage do
+         type: \tf
+         name: name
+         args: args
+         \*
+
+   sendTA: (name, ...args) !->
+      @postMessage do
+         type: \ta
+         name: name
+         args: args
+         \*
+
+   addRectXYByFrameEl: (rect) !->
+      frameRect = @frameEl.getBoundingClientRect!
+      x = rect.x + frameRect.x
+      y = rect.y + frameRect.y
+      rect.x = x
+      rect.y = y
+      rect.left = x
+      rect.top = y
+      rect.right += frameRect.x
+      rect.bottom += frameRect.y
+
+   initTaskFrme: ->
+      @tid = @randomUuid!
+      @postMessage = @frameEl.contentWindow~postMessage
+      tid: @tid
+
+   mousedownFrme: (eventData) !->
+      frameRect = @frameEl.getBoundingClientRect!
+      eventData.clientX += frameRect.x
+      eventData.clientY += frameRect.y
+      mouseEvent = new MouseEvent \mousedown eventData
+      document.dispatchEvent mouseEvent
+
+   startListen: !->
+      if @listenedResolve
+         @listenedResolve!
+         @listenedResolve = void
+
+   showSubmenu: (rect, items) ->
+      new Promise (resolve) !~>
+         @addRectXYByFrameEl rect
+         targetEl = os.makeFakePopperTargetEl rect
+         comp =
+            view: ->
+               m Menu,
+                  level: 1
+                  items: items
+         popperEl = document.createElement \div
+         popperEl.className = "Menu-submenu"
+         os.portalsEl.appendChild popperEl
+         m.mount popperEl, comp
+         os.submenuPopper = os.createPopper targetEl, popperEl,
+            placement: \right-start
+            offset: [-4 -2]
+         document.addEventListener \mousedown os.onmousedownGlobalSubmenu
+         os.submenuResolve = resolve
+
+   closeSubmenu: (item) !->
+      if os.submenuPopper
+         os.submenuPopper.state.elements.popper.remove!
+         os.submenuPopper.destroy!
+         os.submenuPopper = void
+         document.removeEventListener \mousedown os.onmousedownGlobalSubmenu
+         os.submenuResolve item
+
+   onmousedownGlobalSubmenu: (event) !->
+      popperEl = os.submenuPopper.state.elements.popper
+      unless popperEl.contains event.target
+         os.closeSubmenu!
 
    onpointerdownTitle: (event) !->
       if event.buttons == 1

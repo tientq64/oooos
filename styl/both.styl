@@ -128,6 +128,32 @@ for k, val in $nonGrayColors
       margin-right: -28px
       padding-right: 36px
 
+.InputGroup
+   display: inline-flex
+   align-items: center
+
+   > * + *
+      margin-left: -1px
+      border-top-left-radius: 0
+      border-bottom-left-radius: 0
+
+   > :has(+ *)
+      border-top-right-radius: 0
+      border-bottom-right-radius: 0
+
+   > .TextInput
+      flex: 1
+
+      &:focus-within
+         z-index: 2
+
+   > .Button--hasColor
+      z-index: 1
+
+.PasswordInput--isHidePassword
+   .TextInput-input
+      text-security: square
+
 .Menu
    min-width: 120px
    max-width: 480px
@@ -196,34 +222,6 @@ for k, val in $nonGrayColors
 .Menu-divider
    margin: 4px 0
    border-top: 1px solid #0004
-
-.Menu-submenu
-   width: max-content
-   border-radius: 6px
-   background: #fff
-   box-shadow: 0 0 0 1px #0004, $shadow
-
-.InputGroup
-   display: inline-flex
-   align-items: center
-
-   > * + *
-      margin-left: -1px
-      border-top-left-radius: 0
-      border-bottom-left-radius: 0
-
-   > :has(+ *)
-      border-top-right-radius: 0
-      border-bottom-right-radius: 0
-
-   > .TextInput
-      flex: 1
-
-      &:focus-within
-         z-index: 2
-
-   > .Button--hasColor
-      z-index: 1
 
 [[styl]]
 

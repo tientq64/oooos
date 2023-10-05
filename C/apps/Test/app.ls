@@ -114,6 +114,10 @@ App = m.comp do
       m \.row.wrap.middle.gap-2.h-100.p-2.ov-auto,
          onscroll: os.fixBlurryScroll
 
+         m \.col-12 "PasswordInput:"
+         m PasswordInput,
+            value: @text
+
          m \.col-12 "InputGroup:"
          m InputGroup,
             m Button,

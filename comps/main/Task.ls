@@ -194,13 +194,15 @@ class Task extends Both
 
    minimize: (val) !->
       val = Boolean val ? !@minimized
-      @minimized = val
-      m.redraw!
+      if val != @minimized
+         @minimized = val
+         m.redraw!
 
    maximize: (val) !->
       val = Boolean val ? !@maximized
-      @maximized = val
-      m.redraw!
+      if val != @maximized
+         @maximized = val
+         m.redraw!
 
    close: (val) !->
       if @closedResolve
@@ -271,12 +273,10 @@ class Task extends Both
 
    addRectXYByFrameEl: (rect) !->
       frameRect = @frameEl.getBoundingClientRect!
-      x = rect.x + frameRect.x
-      y = rect.y + frameRect.y
-      rect.x = x
-      rect.y = y
-      rect.left = x
-      rect.top = y
+      rect.x += frameRect.x
+      rect.y += frameRect.y
+      rect.left = rect.x
+      rect.top = rect.y
       rect.right += frameRect.x
       rect.bottom += frameRect.y
 
@@ -297,51 +297,64 @@ class Task extends Both
          @listenedResolve!
          @listenedResolve = void
 
-   showSubmenu: (rect, items) ->
-      new Promise (resolve) !~>
+   showMenu: (rect, items, isAddFrameXY, popperClassName, popperOpts) ->
+      resolve = void
+      if isAddFrameXY
          @addRectXYByFrameEl rect
-         targetEl = os.makeFakePopperTargetEl rect
-         comp =
-            view: ->
-               m Menu,
-                  isSubmenu: yes
-                  basic: yes
-                  items: items
-         popperEl = document.createElement \div
-         popperEl.className = "Menu-submenu"
-         os.portalsEl.appendChild popperEl
-         m.mount popperEl, comp
-         os.submenuPopper = os.createPopper targetEl, popperEl,
-            placement: \right-start
-            offset: [-4 -2]
-         document.addEventListener \mousedown os.onmousedownGlobalSubmenu
-         os.submenuResolve = resolve
+      targetEl = @makeFakePopperTargetEl rect
+      popperEl = document.createElement \div
+      popperEl.className = "OS-menuPopper #popperClassName"
+      os.portalsEl.appendChild popperEl
+      comp =
+         view: ~>
+            m Menu,
+               isSubmenu: yes
+               basic: yes
+               items: items
+               onSubmenuItemClick: (item) !~>
+                  close item
+      m.mount popperEl, comp
+      popper = os.createPopper targetEl, popperEl, popperOpts
+      close = (item) !~>
+         if popper
+            m.mount popperEl
+            popperEl.remove!
+            popper.destroy!
+            popper := void
+            document.removeEventListener \mousedown onmousedownGlobal
+            resolve item
+      onmousedownGlobal = (event) !~>
+         unless popperEl.contains event.target
+            close!
+      document.addEventListener \mousedown onmousedownGlobal
+      closed = new Promise (resolve2) !~>
+         resolve := resolve2
+      [close, closed]
 
-   closeSubmenu: (item) !->
-      if os.submenuPopper
-         os.submenuPopper.state.elements.popper.remove!
-         os.submenuPopper.destroy!
-         os.submenuPopper = void
-         document.removeEventListener \mousedown os.onmousedownGlobalSubmenu
-         os.submenuResolve item
+   showSubmenuMenu: (rect, items, isAddFrameXY) ->
+      [close, closed] = @showMenu rect, items, isAddFrameXY, \OS-submenuMenu,
+         placement: \right-start
+         offset: [-4 -2]
+      os.submenuMenuClose = close
+      closed
 
-   onmousedownGlobalSubmenu: (event) !->
-      popperEl = os.submenuPopper.state.elements.popper
-      unless popperEl.contains event.target
-         os.closeSubmenu!
+   closeSubmenuMenu: !->
+      if os.submenuMenuClose
+         os.submenuMenuClose!
+         os.submenuMenuClose = void
 
    showContextMenu: (x, y, items, isAddFrameXY) ->
-      if isAddFrameXY
-         rect = @frameEl.getBoundingClientRect!
-         x += rect.x
-         y += rect.y
-      targetEl = os.makeFakePopperTargetElByXY x, y
-      comp =
-         view: ->
-            m Menu
-      new Promise (resolve) !~>
-         targetEl = os.makeFakePopperTargetEl rect
-         os.contextMenuResolve = resolve
+      rect = @makeRectFromXY x, y
+      [close, closed] = @showMenu rect, items, isAddFrameXY, \OS-contextMenu,
+         placement: \right-start
+         offset: [-1 -1]
+      os.contextMenuClose = close
+      closed
+
+   closeContextMenu: !->
+      if os.contextMenuClose
+         os.contextMenuClose!
+         os.contextMenuClose = void
 
    onpointerdownTitle: (event) !->
       if event.buttons == 1

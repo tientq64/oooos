@@ -6,6 +6,7 @@ Menu = m.comp do
 
    onbeforeupdate: !->
       @isSubmenu = @attrs.isSubmenu
+      @root = @attrs.root or @
       if @isSubmenu
          items = @attrs.items
       else
@@ -22,7 +23,9 @@ Menu = m.comp do
 
    closePopper: !->
       if @popper
-         @popper.state.elements.popper.remove!
+         popperEl = @popper.state.elements.popper
+         m.mount popperEl
+         popperEl.remove!
          @popper.destroy!
          @popper = void
 
@@ -35,15 +38,16 @@ Menu = m.comp do
             if item.subitems
                @timerId = setTimeout !~>
                   @setItem item
+                  popperEl = document.createElement \div
+                  popperEl.className = "OS-menuPopper"
+                  targetEl.appendChild popperEl
                   comp =
-                     view: ->
+                     view: ~>
                         m Menu,
                            isSubmenu: yes
+                           root: @root
                            basic: yes
                            items: item.subitems
-                  popperEl = document.createElement \div
-                  popperEl.className = "Menu-submenu"
-                  targetEl.appendChild popperEl
                   m.mount popperEl, comp
                   @popper = os.createPopper targetEl, popperEl,
                      placement: \right-start
@@ -51,12 +55,12 @@ Menu = m.comp do
                , 200
          else
             @setItem void
-            os.closeSubmenu!
+            os.closeSubmenuMenu!
             if item.subitems
                @timerId = setTimeout !~>
                   @setItem item
                   rect = os.getRect targetEl
-                  if clickedItem = await os.showSubmenu rect, item.subitems
+                  if clickedItem = await os.showSubmenuMenu rect, item.subitems, os.isFrme
                      @clicks[clickedItem.id]? clickedItem
                   @setItem void
                , 200
@@ -67,9 +71,16 @@ Menu = m.comp do
    onclickMenuItem: (item, event) !->
       unless item.subitems
          if @isSubmenu
-            os.closeSubmenu item
+            @root.attrs.onSubmenuItemClick? item
          else
             @clicks[item.id]? item
+
+   onremove: !->
+      if @isSubmenu
+         @closePopper!
+      else
+         if @item
+            os.closeSubmenuMenu!
 
    view: ->
       m \.Menu,

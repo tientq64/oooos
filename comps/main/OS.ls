@@ -21,8 +21,8 @@ class OS extends Task
 
       @portalsEl = void
 
-      @submenuCloses = []
-      @contextMenuCloses = []
+      @submenuMenuClose = void
+      @contextMenuClose = void
 
    oncreate: (vnode) !->
       super vnode

@@ -17,8 +17,8 @@ class Frme extends Both
          initTaskFrme
          mousedownFrme
          startListen
-         showSubmenu
-         closeSubmenu
+         showSubmenuMenu
+         closeSubmenuMenu
          showContextMenu
       ]>
       for let methodName in methodNames

@@ -5,6 +5,7 @@
       "/comps/both/Icon.ls",
       "/comps/both/InputGroup.ls",
       "/comps/both/Menu.ls",
+      "/comps/both/PasswordInput.ls",
       "/comps/both/TextInput.ls"
    ],
    "/comps/main/!(OS.ls)": [

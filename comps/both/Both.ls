@@ -131,7 +131,7 @@ class Both
             else item
       for item, i in items
          newItem = void
-         id = "#parentId:#i"
+         id = item.id ? "#parentId:#i"
          if item.divider
             newItem = item
             if prevItem
@@ -190,7 +190,7 @@ class Both
       rect = el.getBoundingClientRect!
       rect{x, y, width, height, left, top, right, bottom}
 
-   getRectByXY: (x, y) ->
+   makeRectFromXY: (x, y) ->
       x: x
       y: y
       width: 0
@@ -204,8 +204,8 @@ class Both
       getBoundingClientRect: ~>
          rect
 
-   makeFakePopperTargetElByXY: (x, y) ->
-      rect = @getRectByXY x, y
+   makeFakePopperTargetElFromXY: (x, y) ->
+      rect = @makeRectFromXY x, y
       @makeFakePopperTargetEl rect
 
    createPopper: (targetEl, popperEl, opts = {}) ->
@@ -252,4 +252,8 @@ class Both
                   groups[][k]push ...group
             items = items3
             clickedItem = await @showContextMenu event.x, event.y, items, @isFrme
+            if clickedItem
+               clicks[clickedItem.id]? clickedItem
+            for resolve in resolves
+               resolve clickedItem
             m.redraw!

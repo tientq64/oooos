@@ -8,17 +8,39 @@ TextInput = m.comp do
    oncontextmenuInput: (event) !->
       os.addContextMenu event,
          *  beginGroup: \TextInput
-         *  name: "Copy"
-            icon: \clone
+         *  text: "Hoàn tác"
+            icon: \arrow-rotate-left
+            click: !~>
+               @input.dom.focus!
+               document.execCommand \undo
+         *  text: "Làm lại"
+            icon: \arrow-rotate-right
+            click: !~>
+               @input.dom.focus!
+               document.execCommand \redo
+         ,,
+         *  text: "Cắt"
+            icon: \scissors
+            click: !~>
+               @input.dom.focus!
+               document.execCommand \cut
+         *  text: "Sao chép"
+            icon: \copy
             click: !~>
                @input.dom.focus!
                document.execCommand \copy
-         *  name: "Paste"
+         *  text: "Dán"
             icon: \paste
             click: !~>
                @input.dom.focus!
                text = await navigator.clipboard.readText!
                document.execCommand \insertText,, text
+         ,,
+         *  text: "Chọn tất cả"
+            click: !~>
+               @input.dom.focus!
+               document.execCommand \selectAll
+      @attrs.oncontextmenu? event
 
    view: ->
       m \label.TextInput,

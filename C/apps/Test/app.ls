@@ -4,20 +4,20 @@ App = m.comp do
       @bool = yes
 
       @menu =
-         yes
-         yes
+         void
+         ,,
          *  text: "Mở"
             color: \blue
-         yes
+         ,,
          *  text: "Ngôn ngữ hiển thị"
             icon: \fad:language
             subitems:
                *  text: "English"
                *  text: "Tiếng Việt"
-               yes
+               ,,
                *  text: "中国人"
                *  text: "日本語"
-               yes
+               ,,
                *  text: "ภาษาไทย"
                *  text: "Русский"
                *  text: "မြန်မာဘာသာစကား"
@@ -25,10 +25,8 @@ App = m.comp do
                *  text: "भारतीय भाषा"
          *  text: "Chia sẻ"
             subitems:
-               yes
-               yes
                *  header: "Tiêu đề theo sau dấu phân cách"
-               yes
+               ,,
                *  text: "Mạng xã hội"
                   subitems:
                      *  text: "Facebook"
@@ -37,22 +35,24 @@ App = m.comp do
                      *  text: "Tiktok"
                         icon: \fab:tiktok
                         label: "Douyin"
-         yes
+         ,,
          *  header: "Bị loại bỏ"
-         yes
-         yes
+         ,,,
+         *  beginGroup: \Test-edit
          *  header: "Chỉnh sửa 1"
          *  header: "Chỉnh sửa"
          *  text: "Sao chép"
             icon: \clone
             label: "Ctrl+C"
+            group: \Test-copy
          *  text: "Xóa"
             icon: \trash
             label: "Delete"
             color: \red
+         *  endGroup: \Test-edit
          *  text: "Sửa đổi"
             subitems:
-               *  header: "Đặt biến 'text'"
+               *  header: "Gán biến 'text'"
                *  text: "Ngẫu nhiên"
                   icon: \dice
                   click: !~>
@@ -62,30 +62,35 @@ App = m.comp do
                   label: "P"
                   click: (item) !~>
                      @text = item.text
-         yes
+         ,,
          *  text: "Ứng dụng"
             subitems:
                *  text: "Game"
                   icon: \gamepad
                   subitems:
-                     *  text: "Hành động"
+                     *  text: "Giải đố"
                         subitems:
-                           *  text: "GTA 5"
-                              icon: 871463
+                           *  text: "2048"
+                           *  text: "Monument Valley"
+                              icon: \https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR6QuXvNW_NvnUrwZKDiHXcg6Y-I2El5lOh5W1vT00&usqp=CAE&s
                      *  text: "Đua xe"
                         subitems:
                            *  text: "Angry Birds Go!"
                            *  text: "Asphalt 9: Legends"
                            *  text: "Hill Climb Racing"
-                     *  text: "Giải đố"
+                           *  text: "ZingSpeed Mobile"
+                     *  text: "Hành động"
                         subitems:
-                           *  text: "1024"
-                           *  text: "Monument Valley"
-                              icon: \https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR6QuXvNW_NvnUrwZKDiHXcg6Y-I2El5lOh5W1vT00&usqp=CAE&s
+                           *  text: "GTA"
+                              icon: 871463
+                              subitems:
+                                 *  text: "Grand Theft Auto: San Andreas"
+                                 *  text: "Grand Theft Auto IV"
+                                 *  text: "Grand Theft Auto V"
                      *  text: "Kinh điển"
                         subitems:
-                           yes
-                           yes
+                           *  header: "Tiêu đề trống 1"
+                           *  header: "Tiêu đề trống 2"
                *  text: "Đồ họa"
                   subitems:
                      *  text: "Canva"
@@ -95,26 +100,60 @@ App = m.comp do
                      *  text: "Adobe Premiere Pro"
                      *  text: "Sketchup"
                      *  text: "GIMP"
-               yes
+               ,,
                *  text: "Khác..."
-         yes
-         yes
-         yes
+         ,,,,
          *  text: "Thông tin thư mục"
             icon: \circle-info
             label: "Shift+Alt+I"
-         yes
-         yes
+            click: (item) !~>
+               console.log item
+         ,,,
 
    view: ->
       m \.row.wrap.middle.gap-2.h-100.p-2.ov-auto,
          onscroll: os.fixBlurryScroll
+
+         m \.col-12 "InputGroup:"
+         m InputGroup,
+            m Button,
+               "A"
+         m InputGroup,
+            m Button,
+               "A"
+            m Button,
+               color: \blue
+               "B"
+         m InputGroup,
+            m Button,
+               "A"
+            m Button,
+               color: \blue
+               "B"
+            m Button,
+               "C"
+         m InputGroup,
+            m Button,
+               color: \red
+               "A"
+            m TextInput
+            m Button,
+               "B"
+            m Button,
+               color: \blue
+               "C"
+            m Button,
+               "D"
+            m Button,
+               color: \green
+               "E"
 
          m \.col-12 "Menu:"
          m Menu
          m Menu,
             items: @menu
          m Menu,
+            basic: yes
             items: @menu
 
          m \.col-12 "Icon:"

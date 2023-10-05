@@ -2,8 +2,23 @@ TextInput = m.comp do
    oninit: !->
       @input = void
 
-   onchangeInput: (event) !->
+   oninputInput: (event) !->
       @attrs.onchange? event
+
+   oncontextmenuInput: (event) !->
+      os.addContextMenu event,
+         *  beginGroup: \TextInput
+         *  name: "Copy"
+            icon: \clone
+            click: !~>
+               @input.dom.focus!
+               document.execCommand \copy
+         *  name: "Paste"
+            icon: \paste
+            click: !~>
+               @input.dom.focus!
+               text = await navigator.clipboard.readText!
+               document.execCommand \insertText,, text
 
    view: ->
       m \label.TextInput,
@@ -29,7 +44,8 @@ TextInput = m.comp do
                "aria-autocomplete": \both
                placeholder: @attrs.placeholder
                value: @attrs.value
-               oninput: @onchangeInput
+               oninput: @oninputInput
+               oncontextmenu: @oncontextmenuInput
          if @attrs.rightIcon
             m Icon,
                class: "TextInput-icon TextInput-rightIcon"

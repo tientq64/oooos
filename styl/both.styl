@@ -14,7 +14,7 @@ body
    line-height: 1.25
    overflow: hidden
    overflow-wrap: anywhere
-   color: $gray4
+   color: $gray0
    user-select: none
    cursor: default
 
@@ -58,12 +58,12 @@ small
    align-items: center
    gap: 8px
    font: inherit
-   background: #0000
-   color: $gray4
+   background: #fff
+   color: $gray0
    box-shadow: inset 0 0 0 1px #0004
 
    &:hover
-      background: #8884
+      background: $gray3
 
 for k, val in $nonGrayColors
    .Button--{k}
@@ -72,16 +72,17 @@ for k, val in $nonGrayColors
       box-shadow: inset 0 0 0 1px #0008
 
       &:hover
-         background: val[3]
+         background: val[1]
 
       &.Button--basic
          background: none
-         color: val[3]
+         color: val[1]
 
          &:hover
-            background: rgba(val[2], .4)
+            background: val[3]
 
 .Button--basic
+   background: #0000
    box-shadow: none
 
 .Button--small
@@ -94,10 +95,11 @@ for k, val in $nonGrayColors
    display: flex
    align-items: center
    overflow: hidden
+   background: #fff
    box-shadow: inset 0 0 0 1px #0004
 
    &:focus-within
-      box-shadow: 0 0 0 1px $blue3, 0 0 0 4px rgba($blue3, .4)
+      box-shadow: 0 0 0 1px $blue1, 0 0 0 4px rgba($blue1, .4)
 
 .TextInput-leftIcon
    margin-left: 8px
@@ -116,7 +118,7 @@ for k, val in $nonGrayColors
    border: 0
    font: inherit
    background: #0000
-   color: $gray4
+   color: $gray0
    outline: 0
 
    &::placeholder
@@ -134,6 +136,10 @@ for k, val in $nonGrayColors
    background: #fff
    box-shadow: 0 0 0 1px #0004
 
+.Menu--basic
+   background: #0000
+   box-shadow: none
+
 .Menu-item
    min-height: 30px
    padding: 4px 0
@@ -143,7 +149,7 @@ for k, val in $nonGrayColors
 
    &:hover
    &.active
-      background: #8884
+      background: $gray3
 
 for k, val in $nonGrayColors
    .Menu--{k}
@@ -161,14 +167,14 @@ for k, val in $nonGrayColors
    pointer-events: none
 
 .Menu-text
-   margin: 0 8px
+   margin: 0 12px
    flex: 1
    pointer-events: none
 
 .Menu-label
    margin: 0 12px 0 24px
    font-size: 14px
-   color: #888
+   color: $gray2
    pointer-events: none
 
 .Menu-header
@@ -193,6 +199,31 @@ for k, val in $nonGrayColors
 
 .Menu-submenu
    width: max-content
+   border-radius: 6px
+   background: #fff
+   box-shadow: 0 0 0 1px #0004, $shadow
+
+.InputGroup
+   display: inline-flex
+   align-items: center
+
+   > * + *
+      margin-left: -1px
+      border-top-left-radius: 0
+      border-bottom-left-radius: 0
+
+   > :has(+ *)
+      border-top-right-radius: 0
+      border-bottom-right-radius: 0
+
+   > .TextInput
+      flex: 1
+
+      &:focus-within
+         z-index: 2
+
+   > .Button--hasColor
+      z-index: 1
 
 [[styl]]
 
@@ -201,6 +232,7 @@ for k, val in $nonGrayColors
       padding: 4px
       border: 1px solid #0004
       border-radius: 6px
+      background: #fff
 
    for val in absolute relative fixed sticky
       .{val}

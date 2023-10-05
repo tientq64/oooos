@@ -2,9 +2,10 @@ class Frme extends Both
    ->
       super!
 
+      @isFrme = yes
+
       @tid = void
 
-      @dom = void
       @bodyEl = void
       @resolvers = {}
       @listeners = {}
@@ -18,6 +19,7 @@ class Frme extends Both
          startListen
          showSubmenu
          closeSubmenu
+         showContextMenu
       ]>
       for let methodName in methodNames
          method = (...args) ->
@@ -25,7 +27,8 @@ class Frme extends Both
          @[methodName] = method.bind @
 
    oncreate: (vnode) !->
-      @dom = vnode.dom
+      super vnode
+
       @bodyEl = @dom.querySelector \.Frme-body
 
       window.addEventListener \mousedown @onmousedownGlobal, yes

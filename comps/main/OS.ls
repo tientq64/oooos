@@ -17,22 +17,20 @@ class OS extends Task
 
       super app, env
 
+      @isTask = no
+
       @portalsEl = void
 
-      @submenuPopper = void
-      @submenuResolve = void
+      @submenuCloses = []
+      @contextMenuCloses = []
 
    oncreate: (vnode) !->
       super vnode
 
-      await fs.init do
-         bytes: 1024 * 1024 * 512
-
-      for path in Paths\/C/apps/*
-         name = @namePath path
-         await @installApp \boot path, path, "/C/appData/#name"
-
       @portalsEl = @dom.querySelector \.OS-portals
+
+      await @initTime!
+      await @initFiles!
 
       window.addEventListener \resize @onresizeGlobal
       window.addEventListener \message @onmessageGlobal
@@ -44,6 +42,25 @@ class OS extends Task
    updateDesktopSize: !->
       @desktopWidth = innerWidth
       @desktopHeight = innerHeight - @taskbarHeight
+
+   updateTime: !->
+      @time = dayjs!
+      m.redraw!
+
+   initTime: !->
+      @updateTime!
+      setTimeout !~>
+         @updateTime!
+         setInterval @updateTime, 1000
+      , (500 - @time.millisecond!) %% 1000
+
+   initFiles: !->
+      await fs.init do
+         bytes: 1024 * 1024 * 512
+
+      for path in Paths\/C/apps/*
+         name = @namePath path
+         await @installApp \boot path, path, "/C/appData/#name"
 
    onresizeGlobal: (event) !->
       @updateDesktopSize!

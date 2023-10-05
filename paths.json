@@ -3,6 +3,7 @@
       "/comps/both/Both.ls",
       "/comps/both/Button.ls",
       "/comps/both/Icon.ls",
+      "/comps/both/InputGroup.ls",
       "/comps/both/Menu.ls",
       "/comps/both/TextInput.ls"
    ],

@@ -2,6 +2,9 @@ class Task extends Both
    (app, env = {}) ->
       super!
 
+      @isMain = yes
+      @isTask = yes
+
       @app = app
       @env = env
       @name = app.name
@@ -33,7 +36,6 @@ class Task extends Both
       @listenedResolve = void
       @listened = new Promise (@listenedResolve) !~>
       @moving = no
-      @dom = void
       @bodyEl = void
       @frameEl = void
       @postMessage = void
@@ -57,7 +59,8 @@ class Task extends Both
       @maxHeight = Number maxHeight or os.desktopHeight
 
    oncreate: (vnode) !->
-      @dom = vnode.dom
+      super vnode
+
       @bodyEl = @dom.querySelector \.Task-body
       @updateRectDom!
 
@@ -301,7 +304,8 @@ class Task extends Both
          comp =
             view: ->
                m Menu,
-                  level: 1
+                  isSubmenu: yes
+                  basic: yes
                   items: items
          popperEl = document.createElement \div
          popperEl.className = "Menu-submenu"
@@ -325,6 +329,19 @@ class Task extends Both
       popperEl = os.submenuPopper.state.elements.popper
       unless popperEl.contains event.target
          os.closeSubmenu!
+
+   showContextMenu: (x, y, items, isAddFrameXY) ->
+      if isAddFrameXY
+         rect = @frameEl.getBoundingClientRect!
+         x += rect.x
+         y += rect.y
+      targetEl = os.makeFakePopperTargetElByXY x, y
+      comp =
+         view: ->
+            m Menu
+      new Promise (resolve) !~>
+         targetEl = os.makeFakePopperTargetEl rect
+         os.contextMenuResolve = resolve
 
    onpointerdownTitle: (event) !->
       if event.buttons == 1

@@ -1,15 +1,21 @@
-[[compsF]]
+{{compsF}}
 
 os = new Frme
-os.tid = "[[@tid]]"
+os.tid = "{{@tid}}"
 
 m.mount document.body, os
 
-data = await os.initTaskFrme!
-os.tid = data.tid
+$ = await os.initTaskFrme!
+os.tid = $.tid
+os.args = $.args
 
 await (!->
-   [[code]]
+   $ = void
+
+   {{code}}
 
    m.mount os.bodyEl, App
 )!
+
+if $.autoListen
+   os.startListen!

@@ -110,9 +110,85 @@ App = m.comp do
                console.log item
          ,,,
 
+      @pokemons =
+         *  no: 554
+            text: "Darumakka (Dạng Galar)"
+            types: [\ice]
+            dex: "Sống quá lâu ở vùng tuyết phủ, túi lửa của nó đã nguội lạnh và thoái hóa. Hiện tại nó đã có bộ phận tạo ra khí lạnh."
+         *  no: 459
+            text: "Yukikaburi"
+            types: [\grass \ice]
+            dex: "Yukikaburi sống sâu trong núi tuyết. Nó chôn chân xuống tuyết để hấp thụ nước và khí lạnh."
+         *  no: 60
+            text: "Nyoromo"
+            types: [\water]
+            dex: "Nyoromo rất thích lên cạn bất chấp mọi nguy hiểm. Tuy chỉ lê bước lạch bạch, chúng có thể lao nhanh xuống nước nếu gặp phải kẻ thù."
+         *  no: 861
+            text: "Oronge"
+            types: [\dark \fairy]
+            dex: "Nó cuộn toàn bộ lông trên cơ thể lại để tăng sức mạnh cơ bắp, Oronge có sức mạnh vượt trội hơn cả Kairiky."
+         *  no: 862
+            text: "Tachifusaguma"
+            types: [\dark \normal]
+            dex: "Sở hữu giọng nói với âm lượng khủng khiếp. Tiếng hét để đe dọa của nó còn được gọi là chiêu thức Chặn Đứng."
+         *  no: 178
+            text: "Natio"
+            types: [\psychic \flying]
+            dex: "Nó có thể nhìn thấu quá khứ và tương lai. Là loại Pokémon kì lạ, nó quan sát chuyển động của mặt trời mỗi ngày."
+         *  no: 817
+            text: "Jimeleon"
+            types: [\water]
+            dex: "Là một chiến binh tài giỏi, Pokémon này chiến đấu bằng cách tạo ra những quả bóng nước từ hơi ẩm trong lòng bàn tay."
+         *  no: 328
+            text: "Nuckrar"
+            types: [\ground]
+            dex: "Tổ mà nó tạo ra trên sa mạc có hình dạng cong như cái chén, nếu rơi vào thì không thể thoát ra."
+
    view: ->
-      m \.row.wrap.middle.gap-2.h-100.p-2.ov-auto,
+      m \.row.wrap.middle.gap-3.h-100.p-3.ov-auto,
          onscroll: os.fixBlurryScroll
+
+         m \.col-12 "Table:"
+         m Table,
+            striped: yes
+            m \tbody,
+               @pokemons.map (pokemon, i) ~>
+                  m \tr,
+                     m \td i
+                     m \td pokemon.text
+                     m \td pokemon.types.join " / "
+         m Table,
+            fill: yes
+            m \thead,
+               m \tr,
+                  m \th "#"
+                  m \th "Text"
+                  m \th "Types"
+            m \tbody,
+               @pokemons.map (pokemon, i) ~>
+                  m \tr,
+                     m \td i
+                     m \td pokemon.text
+                     m \td pokemon.types.join " / "
+         m Table,
+            style:
+               height: 200
+            striped: yes
+            truncate: yes
+            interactive: yes
+            m \thead,
+               m \tr,
+                  m \th "#"
+                  m \th "Text"
+                  m \th "Types"
+                  m \th "Dex"
+            m \tbody,
+               @pokemons.map (pokemon, i) ~>
+                  m \tr,
+                     m \td i
+                     m \td pokemon.text
+                     m \td pokemon.types.join " / "
+                     m \td.text-wrap pokemon.dex
 
          m \.col-12 "PasswordInput:"
          m PasswordInput,
@@ -147,10 +223,8 @@ App = m.comp do
                color: \blue
                "C"
             m Button,
+               color: \yellow
                "D"
-            m Button,
-               color: \green
-               "E"
 
          m \.col-12 "Menu:"
          m Menu

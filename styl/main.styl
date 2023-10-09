@@ -9,10 +9,11 @@
 
 .OS-taskbar
    padding: 4px 8px
-   border-top: 1px solid #0004
+   border-top: 1px solid $gray2
    display: flex
    align-items: center
    gap: 8px
+   white-space: nowrap
    background: #fff
    z-index: 1
 
@@ -22,6 +23,10 @@
    justify-content: center
    align-items: center
    gap: 4px
+
+.OS-taskbarTask
+   max-width: 200px
+   flex: 1
 
 .OS-taskbarTrays
    display: flex
@@ -35,7 +40,7 @@
    width: max-content
    border-radius: 6px
    background: #fff
-   box-shadow: 0 0 0 1px #0004, $shadow
+   box-shadow: 0 0 0 1px $gray2, $shadow
 
 .OS-submenuMenu
    z-index: 1010
@@ -48,7 +53,8 @@
    border-radius: 8px
    display: flex
    flex-direction: column
-   box-shadow: 0 0 0 1px #0004, $shadow
+   background: #fff
+   box-shadow: 0 0 0 1px $gray2, $shadow
 
 .Task--minimized
    display: none
@@ -63,7 +69,11 @@
    > .Task-body
       margin: 4px 0 0
 
-.Task--isFullscreen
+      > .Task-frame
+         border-radius: 0
+
+.Task--fullscreen
+   position: fixed
    left: 0 !important
    top: 0 !important
    width: 100% !important
@@ -72,6 +82,9 @@
 
    > .Task-body
       margin: 0
+
+      > .Task-frame
+         border-radius: 0
 
 .Task--noHeader
    > .Task-header

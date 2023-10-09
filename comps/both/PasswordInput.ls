@@ -22,6 +22,11 @@ PasswordInput = m.comp do
       m InputGroup,
          class:
             "PasswordInput--isHidePassword": @isHidePassword
+            "PasswordInput"
+            @attrs.class
+         style: m.style do
+            @attrs.style
+         fill: @attrs.fill
          @textInput =
             m TextInput,
                name: @attrs.name

@@ -6,7 +6,6 @@ class Task extends Both
       @isTask = yes
 
       @app = app
-      @env = env
       @name = app.name
       @path = app.path
       @appDataPath = app.appDataPath
@@ -14,11 +13,13 @@ class Task extends Both
       @icon = app.icon
 
       @pid = os.getIncrId!
-      @tid = os.randomUuid!
+      @tid = @randomUuid!
       @title = String env.title ? app.title ? @name
-      @initMinSize app, env
+      @minWidth$ = Number env.minWidth ? app.minWidth or 200
+      @minHeight$ = Number env.minHeight ? app.minHeight or 80
       @updateMinSize!
-      @initMaxSize app, env
+      @maxWidth$ = Number env.maxWidth ? app.maxWidth or void
+      @maxHeight$ = Number env.maxHeight ? app.maxHeight or void
       @updateMaxSize!
       @width = Number env.width ? app.width or 800
       @height = Number env.height ? app.height or 600
@@ -28,8 +29,11 @@ class Task extends Both
       @updateXY!
       @minimized = Boolean env.minimized ? app.minimized ? no
       @maximized = Boolean env.maximized ? app.maximized ? no
-      @isFullscreen = Boolean env.isFullscreen ? app.isFullscreen ? no
-      @noHeader = Boolean env.noHeader ? app.noHeader ? no
+      @fullscreen = Boolean env.fullscreen ? app.fullscreen ? no
+      @noHeader$ = Boolean env.noHeader ? app.noHeader ? no
+      @updateNoHeader!
+      @autoListen = Boolean env.autoListen ? app.autoListen ? yes
+      @args = env.args or app.args or {}
 
       @closedResolve = void
       @closed = new Promise (@closedResolve) !~>
@@ -42,27 +46,15 @@ class Task extends Both
 
       os.tasks.push @
 
-   initMinSize: (app, env) !->
-      minWidth = env.minWidth ? app.minWidth
-      minHeight = env.minHeight ? app.minHeight
-      @isFullMinWidth = minWidth == \full
-      @isFullMinHeight = minHeight == \full
-      @minWidth = Number minWidth or 200
-      @minHeight = Number minHeight or 80
-
-   initMaxSize: (app, env) !->
-      maxWidth = env.maxWidth ? app.maxWidth
-      maxHeight = env.maxHeight ? app.maxHeight
-      @isFullMaxWidth = isNaN maxWidth
-      @isFullMaxHeight = isNaN maxHeight
-      @maxWidth = Number maxWidth or os.desktopWidth
-      @maxHeight = Number maxHeight or os.desktopHeight
-
    oncreate: (vnode) !->
       super vnode
 
       @bodyEl = @dom.querySelector \.Task-body
-      @updateRectDom!
+      @updateSizeDom!
+      @updateXYDom!
+
+      if @fullscreen
+         @setFullscreen yes
 
       unless @isOS
          importVar = eval importVarCode
@@ -70,11 +62,11 @@ class Task extends Both
          code = importVar codeF
          code = importVar codeB
          code = livescript.compile code
-         try
-            styl = await os.readFile "#@path/app.styl"
-            styl = importVar stylF
-            styl = importVar stylB
-            styl = stylus.render styl, compress: yes
+         styl = ""
+         try styl = await os.readFile "#@path/app.styl"
+         styl = importVar stylF
+         styl = importVar stylB
+         styl = stylus.render styl, compress: yes
          html = importVar htmlF
          html .= replace /<!-- Code injected by live-server -->.+<\/script>/s ""
          frameEl = document.createElement \iframe
@@ -123,6 +115,21 @@ class Task extends Both
          create: isCreate
       @makeEnt ent
 
+   createDir: (path) ->
+      dir = await fs.mkdir path
+      @makeEnt dir
+
+   readDir: (path, isDeep) ->
+      path = @castPath path
+      dirs = await fs.readdir path,
+         deep: isDeep
+      Promise.all dirs.map (@makeEnt <|)
+
+   deleteDir: (path) ->
+      path = @castPath path
+      result = await fs.rmdir path
+      result == void
+
    readFile: (path, type) ->
       path = @castPath path
       type ?= \text
@@ -137,21 +144,6 @@ class Task extends Both
    deleteFile: (path) ->
       path = @castPath path
       result = await fs.unlink path
-      result == void
-
-   createDir: (path) ->
-      dir = await fs.mkdir path
-      @makeEnt dir
-
-   readDir: (path, isDeep) ->
-      path = @castPath path
-      dirs = await fs.readdir path,
-         deep: isDeep
-      Promise.all dirs.map (@makeEnt <|)
-
-   deleteDir: (path) ->
-      path = @castPath path
-      result = await fs.rmdir path
       result == void
 
    installApp: (installType, sourcePath, path, appDataPath) !->
@@ -175,8 +167,9 @@ class Task extends Both
             y: pack.y
             minimized: pack.minimized
             maximized: pack.maximized
-            isFullscreen: pack.isFullscreen
+            fullscreen: pack.fullscreen
             noHeader: pack.noHeader
+            autoListen: pack.autoListen
          code = await m.fetch "#sourcePath/app.ls"
          await os.writeFile "#path/app.ls" code
          try
@@ -192,6 +185,14 @@ class Task extends Both
          task = new Task app, env
          task.pid
 
+   waitListenedTask: (pid) ->
+      if task = os.tasks.find (.pid == pid)
+         task.listened
+
+   waitClosedTask: (pid) ->
+      if task = os.tasks.find (.pid == pid)
+         task.closed
+
    minimize: (val) !->
       val = Boolean val ? !@minimized
       if val != @minimized
@@ -204,8 +205,18 @@ class Task extends Both
          @maximized = val
          m.redraw!
 
+   setFullscreen: (val) !->
+      val = Boolean val ? !@fullscreen
+      if val != @fullscreen
+         @fullscreen = val
+         @updateNoHeader!
+         m.redraw!
+
    close: (val) !->
       if @closedResolve
+         if @listenedResolve
+            @listenedResolve no
+            @listenedResolve = void
          @closedResolve val
          @closedResolve = void
          index = os.tasks.indexOf @
@@ -213,20 +224,12 @@ class Task extends Both
          m.redraw!
 
    updateMinSize: !->
-      if @isFullMinWidth
-         @minWidth = os.desktopWidth
-      @minWidth = @clamp @minWidth, 200 os.desktopWidth
-      if @isFullMinHeight
-         @minHeight = os.desktopHeight
-      @minHeight = @clamp @minHeight, 80 os.desktopHeight
+      @minWidth = @clamp @minWidth$, 200 os.desktopWidth
+      @minHeight = @clamp @minHeight$, 80 os.desktopHeight
 
    updateMaxSize: !->
-      if @isFullMaxWidth
-         @maxWidth = os.desktopWidth
-      @maxWidth = @clamp @maxWidth, @minWidth, os.desktopWidth
-      if @isFullMaxHeight
-         @maxHeight = os.desktopHeight
-      @maxHeight = @clamp @maxHeight, @minHeight, os.desktopHeight
+      @maxWidth = @clamp @maxWidth$ ? os.desktopWidth, @minWidth, os.desktopWidth
+      @maxHeight = @clamp @maxHeight$ ? os.desktopHeight, @minHeight, os.desktopHeight
 
    updateSize: !->
       @width = @clamp @width, @minWidth, @maxWidth
@@ -235,6 +238,9 @@ class Task extends Both
    updateXY: !->
       @x = @clamp @x, 0 os.desktopWidth - @width
       @y = @clamp @y, 0 os.desktopHeight - @height
+
+   updateNoHeader: !->
+      @noHeader = @noHeader$ or @fullscreen
 
    updateSizeDom: !->
       @dom.style <<< m.style do
@@ -245,17 +251,6 @@ class Task extends Both
       @dom.style <<< m.style do
          left: @x
          top: @y
-
-   updateRectDom: !->
-      @updateSizeDom!
-      @updateXYDom!
-
-   resizeTask: !->
-      @updateMinSize!
-      @updateMaxSize!
-      @updateSize!
-      @updateXY!
-      @updateRectDom!
 
    sendTF: (name, ...args) !->
       @postMessage do
@@ -284,6 +279,8 @@ class Task extends Both
       @tid = @randomUuid!
       @postMessage = @frameEl.contentWindow~postMessage
       tid: @tid
+      autoListen: @autoListen
+      args: @args
 
    mousedownFrme: (eventData) !->
       frameRect = @frameEl.getBoundingClientRect!
@@ -292,16 +289,19 @@ class Task extends Both
       mouseEvent = new MouseEvent \mousedown eventData
       document.dispatchEvent mouseEvent
 
-   startListen: !->
+   startListen: (val) !->
       if @listenedResolve
-         @listenedResolve!
+         val ?= yes
+         @listenedResolve val
          @listenedResolve = void
 
    showMenu: (rect, items, isAddFrameXY, popperClassName, popperOpts) ->
       resolve = void
       if isAddFrameXY
          @addRectXYByFrameEl rect
-      targetEl = @makeFakePopperTargetEl rect
+      targetEl =
+         getBoundingClientRect: ~>
+            rect
       popperEl = document.createElement \div
       popperEl.className = "OS-menuPopper #popperClassName"
       os.portalsEl.appendChild popperEl
@@ -387,7 +387,7 @@ class Task extends Both
          class: m.class do
             "Task--minimized": @minimized
             "Task--maximized": @maximized
-            "Task--isFullscreen": @isFullscreen
+            "Task--fullscreen": @fullscreen
             "Task--noHeader": @noHeader
          m \.Task-header,
             inert: @noHeader

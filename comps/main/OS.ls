@@ -11,6 +11,9 @@ class OS extends Task
 
       @desktopWidth = void
       @desktopHeight = void
+      @desktopTask = void
+      @desktopBgImgPath = void
+      @desktopBgImgDataUrl = void
       @updateDesktopSize!
 
       @time = dayjs!
@@ -31,17 +34,17 @@ class OS extends Task
 
       await @initTime!
       await @initFiles!
-
-      window.addEventListener \resize @onresizeGlobal
-      window.addEventListener \message @onmessageGlobal
+      await @initEvents!
+      await @initTasks!
 
       m.redraw!
 
-      @runTask \Test
+      await @runTask \Terminal
 
    updateDesktopSize: !->
       @desktopWidth = innerWidth
       @desktopHeight = innerHeight - @taskbarHeight
+      m.redraw!
 
    updateTime: !->
       @time = dayjs!
@@ -53,6 +56,7 @@ class OS extends Task
          @updateTime!
          setInterval @updateTime, 1000
       , (500 - @time.millisecond!) %% 1000
+      m.redraw!
 
    initFiles: !->
       await fs.init do
@@ -61,11 +65,32 @@ class OS extends Task
       for path in Paths\/C/apps/*
          name = @namePath path
          await @installApp \boot path, path, "/C/appData/#name"
+      m.redraw!
+
+   initEvents: !->
+      window.addEventListener \resize @onresizeGlobal
+      window.addEventListener \message @onmessageGlobal
+      m.redraw!
+
+   initTasks: !->
+      pid = @runTask \FileManager,
+         title: "Desktop"
+         fullscreen: yes
+         args:
+            isDesktop: yes
+      @desktopTask = @tasks.find (.pid == pid)
+      m.redraw!
 
    onresizeGlobal: (event) !->
       @updateDesktopSize!
       for task in os.tasks
-         task.resizeTask!
+         task.updateMinSize!
+         task.updateMaxSize!
+         task.updateSize!
+         task.updateXY!
+         task.updateSizeDom!
+         task.updateXYDom!
+      m.redraw!
 
    onmessageGlobal: (event) !->
       if data = event.data
@@ -110,8 +135,8 @@ class OS extends Task
                m \.OS-taskbarTasks,
                   @tasks.map (task) ~>
                      m Button,
+                        class: "OS-taskbarTask"
                         basic: yes
-                        width: 200
                         icon: task.icon
                         task.title
                m \.OS-taskbarTrays,

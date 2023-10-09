@@ -7,6 +7,7 @@ Button = m.comp do
          class: m.class do
             "disabled": @attrs.disabled
             "Button--basic": @attrs.basic
+            "Button--bordered": !@attrs.basic
             "Button--small": @attrs.small
             "Button--#that Button--hasColor" if @attrs.color
             @attrs.class

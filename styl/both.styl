@@ -1,8 +1,16 @@
-[[stylD]]
+{{stylD}}
+
+:root
+   --bg-opacity: 1
 
 *, :before, :after
    box-sizing: border-box
    vertical-align: middle
+
+.dark
+   background-color: $gray0
+   color: #fff
+   color-scheme: dark
 
 html
    height: 100%
@@ -10,7 +18,7 @@ html
 body
    height: 100%
    margin: 0
-   font-family: "Droid Sans", sans-serif
+   font-family: $sans
    line-height: 1.25
    overflow: hidden
    overflow-wrap: anywhere
@@ -19,7 +27,7 @@ body
    cursor: default
 
 img, a
-   user-drag none
+   user-drag: none
 
 p
    margin: 0 8px
@@ -49,7 +57,7 @@ small
    min-width: unset
 
 .Button
-   height: 30px
+   min-height: 30px
    padding: 0 8px
    border: 0
    border-radius: 6px
@@ -58,48 +66,75 @@ small
    align-items: center
    gap: 8px
    font: inherit
-   background: #fff
    color: $gray0
-   box-shadow: inset 0 0 0 1px #0004
+
+.Button--bordered
+   border: 1px solid $gray2
+   background: #fff
 
    &:hover
+   &.active
+      border-color: $gray1
+      background: $gray3
+
+      +dark()
+         border-color: $gray3
+         background: $gray1
+
+   +dark()
+      border-color: $gray2
+      background: $gray0
+      color: #fff
+
+.Button--basic
+   background: #0000
+
+   &:hover
+   &.active
       background: $gray3
 
 for k, val in $nonGrayColors
    .Button--{k}
-      background: val[2]
-      color: #fff
-      box-shadow: inset 0 0 0 1px #0008
+      &.Button--bordered
+         border-color: val[0]
+         background: val[2]
+         color: #fff
 
-      &:hover
-         background: val[1]
+         &:hover
+         &.active
+            background: val[1]
 
       &.Button--basic
-         background: none
          color: val[1]
 
          &:hover
             background: val[3]
 
-.Button--basic
-   background: #0000
-   box-shadow: none
-
 .Button--small
-   height: 24px
+   min-height: 24px
 
 .TextInput
    width: 200px
    height: 30px
+   border: 1px solid $gray2
    border-radius: 6px
    display: flex
    align-items: center
    overflow: hidden
    background: #fff
-   box-shadow: inset 0 0 0 1px #0004
 
    &:focus-within
+      border-color: #0000
       box-shadow: 0 0 0 1px $blue1, 0 0 0 4px rgba($blue1, .4)
+
+      +dark()
+         box-shadow: 0 0 0 1px $blue3, 0 0 0 4px rgba($blue3, .4)
+
+   +dark()
+      background: $gray0
+
+.TextInput--fill
+   width: 100%
 
 .TextInput-leftIcon
    margin-left: 8px
@@ -122,11 +157,17 @@ for k, val in $nonGrayColors
    outline: 0
 
    &::placeholder
-      color: $gray2
+      color: $gray1
+
+      +dark()
+         color: $gray3
 
    &:has(+ .TextInput-rightIcon)
       margin-right: -28px
       padding-right: 36px
+
+   +dark()
+      color: #fff
 
 .InputGroup
    display: inline-flex
@@ -134,21 +175,36 @@ for k, val in $nonGrayColors
 
    > * + *
       margin-left: -1px
+
+   > * + *
+   > * + .InputGroup > :first-child
       border-top-left-radius: 0
       border-bottom-left-radius: 0
 
    > :has(+ *)
+   > .InputGroup:has(+ *) > :last-child
       border-top-right-radius: 0
       border-bottom-right-radius: 0
 
    > .TextInput
+   > .PasswordInput
       flex: 1
 
       &:focus-within
-         z-index: 2
+         z-index: 4
+
+   > .Button
+      &:hover
+         z-index: 1
 
    > .Button--hasColor
-      z-index: 1
+      z-index: 2
+
+      &:hover
+         z-index: 3
+
+.InputGroup--fill
+   width: 100%
 
 .PasswordInput--isHidePassword
    .TextInput-input
@@ -158,13 +214,13 @@ for k, val in $nonGrayColors
    min-width: 120px
    max-width: 480px
    padding: 4px
+   border: 1px solid $gray2
    border-radius: 6px
    background: #fff
-   box-shadow: 0 0 0 1px #0004
 
 .Menu--basic
+   border: 0
    background: #0000
-   box-shadow: none
 
 .Menu-item
    min-height: 30px
@@ -207,7 +263,7 @@ for k, val in $nonGrayColors
    min-height: 34px
    margin-top: 4px
    padding: 4px 8px 0
-   border-top: 1px solid #0004
+   border-top: 1px solid $gray2
    display: flex
    align-items: center
    font-size: 14px
@@ -221,9 +277,54 @@ for k, val in $nonGrayColors
 
 .Menu-divider
    margin: 4px 0
-   border-top: 1px solid #0004
+   border-top: 1px solid $gray2
 
-[[styl]]
+.Table
+   border-radius: 6px
+   overflow: auto
+
+   thead
+      position: sticky
+      top: 0
+      background: #fff
+      box-shadow: inset 0 -1px $gray2
+      z-index: 1
+
+   td, th
+      height: 30px
+      padding: 4px 8px
+
+   th
+      text-align: left
+
+.Table--fill
+   width: 100%
+
+.Table--striped
+   tbody
+      tr
+         &:nth-child(even)
+            background: $gray4
+
+.Table--fixed
+   table
+      table-layout: fixed
+
+.Table--truncate
+   td, th
+      text-truncate: ellipsis
+
+.Table--interactive
+   tbody
+      tr
+         &:hover
+            background: $gray3
+
+.Table-table
+   width: 100%
+   border-collapse: collapse
+
+{{styl}}
 
 #m
    .thumbnail
@@ -237,10 +338,19 @@ for k, val in $nonGrayColors
          position: val
 
    for val in 0 25 50 75 100
+      val2 = (val)%
       .w-{val}
-         width: (val)%
+         width: val2
       .h-{val}
-         height: (val)%
+         height: val2
+      .min-w-{val}
+         min-width: val2
+      .min-h-{val}
+         min-height: val2
+      .max-w-{val}
+         max-width: val2
+      .max-h-{val}
+         max-height: val2
 
    props = {
       m: margin
@@ -260,6 +370,25 @@ for k, val in $nonGrayColors
             .{p}{s}-auto
                for side in sides
                   {prop}{side}: auto
+
+   .border
+      border: 1px solid $gray2
+
+   for val in 2 3 4
+      .border-{val}
+         border-width: (val)px
+
+   for val in solid dashed dotted
+      .border-{val}
+         border-style: val
+
+   for k, tones in $colors
+      for val, i in tones
+         .border-{k}{i}
+            border-color: val
+   for val in "black" "white" "transparent"
+      .border-{val}
+         border-color: unquote(val)
 
    for val, i in 0 4px 6px 8px 16px 32px
       .rounded-{i}
@@ -320,7 +449,7 @@ for k, val in $nonGrayColors
       .gap-y-{i}
          row-gap: val
 
-   for val in auto visible hidden
+   for val in auto scroll overlay visible hidden
       .ov-{val}
          overflow: val
    for val in auto visible hidden
@@ -366,6 +495,44 @@ for k, val in $nonGrayColors
    .text-wrap
       white-space: normal
 
+   for k, tones in $colors
+      for val, i in tones
+         .bg-{k}{i}
+            background-color: $hexToRgba(val, var(--bg-opacity))
+         .text-{k}{i}
+            color: val
+   for val in "black" "white"
+      .bg-{val}
+         background-color: $hexToRgba(val, var(--bg-opacity))
+      .text-{val}
+         color: unquote(val)
+   .bg-transparent
+      background-color: transparent
+
+   for val in 0 25 50 75 100
+      .bg-opacity-{val}
+         --bg-opacity: (val / 100)
+
+   for val in 0 25 50 75 100
+      .opacity-{val}
+         opacity: (val / 100)
+
+   for val in text all auto none
+      .select-{val}
+         user-select: val
+
+   for val in auto all none
+      .pe-{val}
+         pointer-events: val
+
+   for val in auto default pointer text copy crosshair zoom-in zoom-out not-allowed none
+      .cursor-{val}
+         cursor: val
+
+   for val in 0 10 20 30 40 50
+      .z-{val}
+         z-index: val
+
    .disabled
-      opacity: .5
+      opacity: .6
       pointer-events: none

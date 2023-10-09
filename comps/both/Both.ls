@@ -5,8 +5,11 @@ class Both
       @incrId = 0
 
       @dom = void
+
       @contextMenuList = []
       @contextMenuResolves = []
+
+      @importedLibs = Object.create null
 
    oncreate: (vnode) !->
       @dom = vnode.dom
@@ -65,14 +68,20 @@ class Both
       [nodes, root] = @splitPath path
       root + nodes.join \/
 
-   resolPath: (...paths) ->
+   joinPath: (...paths) ->
       index = paths.findLastIndex (.0 == \/)
-      if index >= 0
+      if index > 0
          paths .= slice index
-      newPath = paths
-         .map (@normPath <|)
-         .join \/
-      @normPath newPath
+      path = paths.join \/
+      @normPath path
+
+   absPath: (path) ->
+      [nodes] = @splitPath path
+      \/ + nodes.join \/
+
+   relPath: (path) ->
+      [nodes] = @splitPath path
+      nodes.join \/
 
    dirPath: (path) ->
       [nodes, root] = @splitPath path
@@ -181,6 +190,41 @@ class Both
          newItems = void
       [newItems, clicks, newGroups]
 
+   createHist: (items, max) ->
+      items = @castNewArr items
+      hist =
+         max: max or 1000
+         items: items
+         index: items.length - 1
+         goto: (index) ~>
+            if 0 <= index < hist.items.length
+               hist.index = index
+               hist.update!
+               hist.item
+         back: ~>
+            hist.goto hist.index - 1
+         forward: ~>
+            hist.goto hist.index + 1
+         push: (item) !~>
+            if hist.index < hist.items.length - 1
+               hist.items.splice hist.index + 1
+            hist.items.push item
+            if hist.items.length > hist.max
+               hist.items.shift!
+            hist.index = hist.items.length - 1
+            hist.update!
+         insert: (item, at = -2) !~>
+            hist.items.splice at, 0 item
+            if hist.items.length > hist.max
+               hist.items.shift!
+            hist.index = hist.items.length - 1
+         update: !~>
+            hist.item = hist.items[hist.index]
+            hist.canGoBack = hist.index > 0
+            hist.canGoForward = hist.index < hist.items.length - 1
+      hist.update!
+      hist
+
    fixBlurryScroll: (event) !->
       event.redraw = no
       event.target.scrollLeft = Math.round event.target.scrollLeft
@@ -199,14 +243,6 @@ class Both
       top: y
       right: x
       bottom: y
-
-   makeFakePopperTargetEl: (rect) ->
-      getBoundingClientRect: ~>
-         rect
-
-   makeFakePopperTargetElFromXY: (x, y) ->
-      rect = @makeRectFromXY x, y
-      @makeFakePopperTargetEl rect
 
    createPopper: (targetEl, popperEl, opts = {}) ->
       Popper.createPopper targetEl, popperEl,
@@ -231,6 +267,52 @@ class Both
       @contextMenuList.push items
       new Promise (resolve) !~>
          @contextMenuResolves.push resolve
+
+   import: (...libs) !->
+      listJs = []
+      listCss = []
+      await Promise.all libs.map (lib, i) ~>
+         promise = os.importedLibs[lib]
+         unless promise
+            promise = new Promise (resolve) !~>
+               [, kind, name, ext] = lib.match /^(?:(npm|git|sky):)?(.+?)(?:!(js|css))?$/
+               kind or= \npm
+               ext or= name.endsWith \.css and \css or \js
+               loadType = \fetch
+               switch kind
+               | \npm
+                  url = "https://cdn.jsdelivr.net/npm/#name"
+               | \git
+                  url = "https://cdn.jsdelivr.net/gh/#name"
+               | \sky
+                  url = "https://cdn.skypack.dev/#name?min"
+                  loadType = \import
+               switch loadType
+               | \fetch
+                  text = await m.fetch url
+               | \import
+                  modl = await import url
+               if text
+                  if ext == \css
+                     listCss[i] = text
+                  else
+                     listJs[i] = text
+               else if modl
+                  varName = name
+                     .replace /^[^a-z\d]+|(?<=.)@[\d.]+$/g ""
+                     .replace /[^a-z\d]+([a-z])/g (.at -1 .toUpperCase!)
+                  listJs[i] = [varName, modl]
+               resolve!
+         promise
+      if listJs.length
+         for js in listJs
+            if Array.isArray js
+               window[js.0] = js.1
+            else
+               window.eval js
+      if listCss.length
+         css = listCss.join \\n .concat \\n
+         stylLibsEl.textContent += css
 
    oncontextmenuGlobalBoth: (event) !->
       if event.isTrusted

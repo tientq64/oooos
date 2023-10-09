@@ -1,4 +1,4 @@
-[[compsM]]
+{{compsM}}
 
 app =
    name: \OooOS
@@ -6,7 +6,7 @@ app =
    appDataPath: \/C/appData/OooOS
    type: \os
    icon: \fad:kiwi-bird
-   isFullscreen: yes
+   fullscreen: yes
    noHeader: yes
 
 new OS app

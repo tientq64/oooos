@@ -46,7 +46,10 @@ TextInput = m.comp do
       m \label.TextInput,
          class: m.class do
             "disabled": @attrs.disabled
+            "TextInput--fill": @attrs.fill
             @attrs.class
+         style: m.style do
+            @attrs.style
          if @attrs.icon
             m Icon,
                class: "TextInput-icon TextInput-leftIcon"

@@ -1,23 +1,31 @@
 {
    "name": "oooos",
-   "version": "0.1.2",
+   "version": "0.1.3",
    "description": "Ò ó o o... hệ điều hành này mới nở mha",
+   "author": "tientq64",
+   "keywords": [
+      "os",
+      "operating-system",
+      "fake-os",
+      "mithril",
+      "livescript"
+   ],
    "main": ".",
-   "scripts": {
-      "build": "ls2 build.ls"
-   },
+   "homepage": "https://oooos.vercel.app",
    "repository": {
       "type": "git",
       "url": "https://github.com/tientq64/oooos.git"
    },
-   "keywords": [
-      "os",
-      "operating-system"
-   ],
-   "author": "tientq64",
-   "license": "MIT",
    "bugs": {
       "url": "https://github.com/tientq64/oooos/issues"
    },
-   "homepage": "https://oooos.vercel.app"
+   "scripts": {
+      "build": "ls2 build.ls"
+   },
+   "devDependencies": {
+      "fs-extra": "11.1.1",
+      "glob-concat": "1.0.3",
+      "livescript2": "1.5.0"
+   },
+   "license": "MIT"
 }

@@ -6,13 +6,31 @@ text-security()
    -webkit-text-security arguments
    text-security arguments
 
+text-truncate()
+   text-overflow: arguments
+   white-space: nowrap
+   overflow: hidden
+
 user-drag()
    -webkit-user-drag arguments
    user-drag arguments
 
+dark()
+   .dark &
+   .dark&
+      {block}
+
+$hexToRgba(hex, alpha)
+   if typeof(hex) == "string"
+      hex = convert(hex)
+   r = red(hex)
+   g = green(hex)
+   b = blue(hex)
+   s("rgba(%s,%s,%s,%s)", r, g, b, alpha)
+
 $gray0 = #1f2937
 $gray1 = #4b5563
-$gray2 = #7e8492
+$gray2 = #9ca3af
 $gray3 = #d1d5db
 $gray4 = #f3f4f6
 

@@ -2,6 +2,6 @@ os = void
 
 dayjs.locale \vi
 
-[[compsB]]
+{{compsB}}
 
-[[code]]
+{{code}}

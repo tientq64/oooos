@@ -6,6 +6,7 @@
       "/comps/both/InputGroup.ls",
       "/comps/both/Menu.ls",
       "/comps/both/PasswordInput.ls",
+      "/comps/both/Table.ls",
       "/comps/both/TextInput.ls"
    ],
    "/comps/main/!(OS.ls)": [
@@ -15,6 +16,8 @@
       "/comps/frme/Frme.ls"
    ],
    "/C/apps/*": [
+      "/C/apps/FileManager",
+      "/C/apps/Terminal",
       "/C/apps/Test"
    ],
    "/C/!(apps)/**": []

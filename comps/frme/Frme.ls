@@ -5,6 +5,7 @@ class Frme extends Both
       @isFrme = yes
 
       @tid = void
+      @args = void
 
       @bodyEl = void
       @resolvers = {}
@@ -14,6 +15,16 @@ class Frme extends Both
 
    initFTFMethods: !->
       methodNames = <[
+         getEnt
+         existsEnt
+         moveEnt
+         copyEnt
+         createDir
+         readDir
+         deleteDir
+         readFile
+         writeFile
+         deleteFile
          initTaskFrme
          mousedownFrme
          startListen

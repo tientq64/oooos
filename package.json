@@ -19,9 +19,6 @@
    "bugs": {
       "url": "https://github.com/tientq64/oooos/issues"
    },
-   "scripts": {
-      "build": "ls2 build.ls"
-   },
    "devDependencies": {
       "fs-extra": "11.1.1",
       "glob-concat": "1.0.3",

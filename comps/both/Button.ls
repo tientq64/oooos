@@ -17,6 +17,7 @@ Button = m.comp do
          type: @attrs.type
          disabled: @attrs.disabled
          onclick: @attrs.onclick
+         oncontextmenu: @attrs.oncontextmenu
          if @attrs.icon
             m Icon,
                name: @attrs.icon

@@ -41,14 +41,13 @@ Menu = m.comp do
                   popperEl = document.createElement \div
                   popperEl.className = "OS-menuPopper"
                   targetEl.appendChild popperEl
-                  comp =
+                  m.mount popperEl,
                      view: ~>
                         m Menu,
                            isSubmenu: yes
                            root: @root
                            basic: yes
                            items: item.subitems
-                  m.mount popperEl, comp
                   @popper = os.createPopper targetEl, popperEl,
                      placement: \right-start
                      offset: [-4 -2]
@@ -62,6 +61,7 @@ Menu = m.comp do
                   rect = os.getRect targetEl
                   if clickedItem = await os.showSubmenuMenu rect, item.subitems, os.isFrme
                      @clicks[clickedItem.id]? clickedItem
+                     @attrs.onItemClick? clickedItem
                   @setItem void
                , 200
 
@@ -74,6 +74,7 @@ Menu = m.comp do
             @root.attrs.onSubmenuItemClick? item
          else
             @clicks[item.id]? item
+            @attrs.onItemClick? item
 
    onremove: !->
       if @isSubmenu

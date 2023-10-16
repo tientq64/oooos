@@ -4,6 +4,8 @@ class OS extends Task
 
       @isOS = yes
 
+      app.perms = @createAppPerms app
+
       @apps = [app]
       @tasks = []
 
@@ -22,15 +24,11 @@ class OS extends Task
 
       @isTask = no
 
-      @portalsEl = void
-
       @submenuMenuClose = void
       @contextMenuClose = void
 
    oncreate: (vnode) !->
       super vnode
-
-      @portalsEl = @dom.querySelector \.OS-portals
 
       await @initTime!
       await @initFiles!
@@ -39,7 +37,7 @@ class OS extends Task
 
       m.redraw!
 
-      await @runTask \Terminal
+      await @runTask \Test
 
    updateDesktopSize: !->
       @desktopWidth = innerWidth
@@ -61,7 +59,6 @@ class OS extends Task
    initFiles: !->
       await fs.init do
          bytes: 1024 * 1024 * 512
-
       for path in Paths\/C/apps/*
          name = @namePath path
          await @installApp \boot path, path, "/C/appData/#name"
@@ -69,6 +66,7 @@ class OS extends Task
 
    initEvents: !->
       window.addEventListener \resize @onresizeGlobal
+      window.addEventListener \mousedown @onmousedownGlobal
       window.addEventListener \message @onmessageGlobal
       m.redraw!
 
@@ -92,6 +90,14 @@ class OS extends Task
          task.updateXYDom!
       m.redraw!
 
+   onmousedownGlobal: (event) !->
+      if event.isTrusted
+         eventData = event{screenX, screenY, buttons}
+         eventData.clientX = -1
+         eventData.clientY = -1
+         for task in @tasks
+            task.sendTF \mousedownMain eventData
+
    onmessageGlobal: (event) !->
       if data = event.data
          {type} = data
@@ -114,7 +120,7 @@ class OS extends Task
 
    view: (vnode) ->
       super vnode,
-         m \.OS,
+         m \.OS.Portal,
             m \.OS-tasks,
                @tasks.map (task) ~>
                   if task.type != \os
@@ -155,4 +161,3 @@ class OS extends Task
                   m Button,
                      basic: yes
                      icon: \message
-            m \.OS-portals

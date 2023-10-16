@@ -179,6 +179,26 @@ class Task extends Both
          os.apps.push app
       m.redraw!
 
+   createAppPerms: (app) ->
+      perms =
+         *  name: \desktopBgView
+            status: \ask
+         *  name: \desktopBgEdit
+            status: \ask
+         *  name: \filesView
+            status: \ask
+            paths:
+               *  path: app.appDataPath
+                  status: \granted
+               ...
+         *  name: \filesEdit
+            status: \ask
+            paths:
+               *  path: app.appDataPath
+                  status: \granted
+               ...
+      perms
+
    runTask: (name, env) ->
       app = os.apps.find (.name == name)
       if app
@@ -253,18 +273,20 @@ class Task extends Both
          top: @y
 
    sendTF: (name, ...args) !->
-      @postMessage do
-         type: \tf
-         name: name
-         args: args
-         \*
+      if @postMessage
+         @postMessage do
+            type: \tf
+            name: name
+            args: args
+            \*
 
    sendTA: (name, ...args) !->
-      @postMessage do
-         type: \ta
-         name: name
-         args: args
-         \*
+      if @postMessage
+         @postMessage do
+            type: \ta
+            name: name
+            args: args
+            \*
 
    addRectXYByFrameEl: (rect) !->
       frameRect = @frameEl.getBoundingClientRect!
@@ -288,6 +310,11 @@ class Task extends Both
       eventData.clientY += frameRect.y
       mouseEvent = new MouseEvent \mousedown eventData
       document.dispatchEvent mouseEvent
+      eventData.clientX = -1
+      eventData.clientY = -1
+      for task in os.tasks
+         unless task == @
+            task.sendTF \mousedownMain eventData
 
    startListen: (val) !->
       if @listenedResolve
@@ -304,8 +331,10 @@ class Task extends Both
             rect
       popperEl = document.createElement \div
       popperEl.className = "OS-menuPopper #popperClassName"
-      os.portalsEl.appendChild popperEl
-      comp =
+      popperEl.addEventListener \mousedown @stopPropagation
+      portalEl = os.dom
+      portalEl.appendChild popperEl
+      m.mount popperEl,
          view: ~>
             m Menu,
                isSubmenu: yes
@@ -313,7 +342,6 @@ class Task extends Both
                items: items
                onSubmenuItemClick: (item) !~>
                   close item
-      m.mount popperEl, comp
       popper = os.createPopper targetEl, popperEl, popperOpts
       close = (item) !~>
          if popper

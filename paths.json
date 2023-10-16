@@ -6,6 +6,7 @@
       "/comps/both/InputGroup.ls",
       "/comps/both/Menu.ls",
       "/comps/both/PasswordInput.ls",
+      "/comps/both/Popover.ls",
       "/comps/both/Table.ls",
       "/comps/both/TextInput.ls"
    ],
@@ -20,5 +21,7 @@
       "/C/apps/Terminal",
       "/C/apps/Test"
    ],
-   "/C/!(apps)/**": []
+   "/C/!(apps)/**": [
+      "/C/appData"
+   ]
 }

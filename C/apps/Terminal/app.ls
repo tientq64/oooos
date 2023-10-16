@@ -57,6 +57,7 @@ App = m.comp do
 
    ls: (path) ->
       path ?= @path
+      path = os.joinPath @path, path
       ents = await os.readDir path
       data =
          *  "Tên"

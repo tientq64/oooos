@@ -2,6 +2,8 @@ App = m.comp do
    oninit: !->
       @text = "Nidoqueen"
       @bool = yes
+      @boolTestPatchDom = no
+      @popoverIsOpen = yes
 
       @menu =
          void
@@ -87,6 +89,16 @@ App = m.comp do
                                  *  text: "Grand Theft Auto: San Andreas"
                                  *  text: "Grand Theft Auto IV"
                                  *  text: "Grand Theft Auto V"
+                                    subitems:
+                                       *  text: "Chapters"
+                                          subitems:
+                                             *  text: "Chapter 1: North Yankton, 9 years ago"
+                                             *  text: "Chapter 2: Franklin and Lamar repossess two convertibles for an Armenian car dealer, Simeon"
+                                             *  text: "Chapter 3: Franklin and Lamar go to a shady part of Vespucci Beach to repo a bike for Simeon"
+                                             *  text: "Chapter 4: Franklin heads to Rockford Hills to repo a car for Simeon"
+                                             *  text: "Chapter 5: Jimmy gets in trouble with some gangsters and calls Michael for help"
+                                             ,,
+                                             *  text: "More..."
                      *  text: "Kinh điển"
                         subitems:
                            *  header: "Tiêu đề trống 1"
@@ -147,6 +159,58 @@ App = m.comp do
    view: ->
       m \.row.wrap.middle.gap-3.h-100.p-3.ov-auto,
          onscroll: os.fixBlurryScroll
+
+         m Button,
+            onclick: !~>
+               != @boolTestPatchDom
+            "@boolTestPatchDom: #@boolTestPatchDom"
+         m Button,
+            onclick: !~>
+               setTimeout !~>
+                  != @boolTestPatchDom
+                  m.redraw!
+               , 2000
+            "Sau 2s"
+         if @boolTestPatchDom
+            m \p,
+               "Đoạn văn này xuất hiện chỉ với mục đích để test bản vá DOM."
+
+         m \.col-12 "Popover:"
+         m Popover,
+            content: ~>
+               "Đây là Popover content."
+            m \p,
+               "<p> tag"
+         m Popover,
+            content: (close) ~>
+               m \.p-3,
+                  m \p,
+                     "Nhấn nút phía dưới để mở Popover con:"
+                  m Popover,
+                     content: (close2) ~>
+                        m Menu,
+                           basic: yes
+                           items: @menu
+                           onItemClick: (item) !~>
+                              close!
+                     m Button,
+                        "Button 2"
+            m Button,
+               "Button"
+         m Popover,
+            m TextInput
+         m Popover
+         m Button,
+            onclick: !~>
+               != @popoverIsOpen
+            "@popoverIsOpen: #@popoverIsOpen"
+         m Popover,
+            isOpen: @popoverIsOpen
+            content: ~>
+               m \.m-2,
+                  "Pop peep 🍿🫑"
+            m Button,
+               "Controlled"
 
          m \.col-12 "Table:"
          m Table,

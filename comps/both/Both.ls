@@ -50,6 +50,22 @@ class Both
       else if arr? => [arr]
       else []
 
+   safeCall: (fn, ...args) ->
+      try
+         result = fn? ...args
+         isErr = no
+      catch e
+         result = e
+         isErr = yes
+         console.error e
+      [result, isErr]
+
+   safeCastVal: (fn, ...args) ->
+      if typeof fn == \function
+         @safeCall fn, ...args
+      else
+         [fn, no]
+
    splitPath: (path) ->
       root = ""
       if path.0 == \/
@@ -224,6 +240,10 @@ class Both
             hist.canGoForward = hist.index < hist.items.length - 1
       hist.update!
       hist
+
+   stopPropagation: (event) !->
+      event.redraw = no
+      event.stopPropagation!
 
    fixBlurryScroll: (event) !->
       event.redraw = no

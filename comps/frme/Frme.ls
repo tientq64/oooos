@@ -42,7 +42,7 @@ class Frme extends Both
 
       @bodyEl = @dom.querySelector \.Frme-body
 
-      window.addEventListener \mousedown @onmousedownGlobal, yes
+      window.addEventListener \mousedown @onmousedownGlobal
       window.addEventListener \message @onmessageGlobal
 
    addListener: (name, callback) !->
@@ -53,6 +53,10 @@ class Frme extends Both
       if listener = @listeners[name]
          index = listener.indexOf callback
          listener.splice index, 1
+
+   mousedownMain: (eventData) !->
+      mouseEvent = new MouseEvent \mousedown eventData
+      document.dispatchEvent mouseEvent
 
    onmousedownGlobal: (event) !->
       if event.isTrusted
@@ -100,5 +104,5 @@ class Frme extends Both
             \*
 
    view: ->
-      m \.Frme,
+      m \.Frme.Portal,
          m \.Frme-body

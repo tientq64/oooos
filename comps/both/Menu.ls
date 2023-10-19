@@ -88,6 +88,8 @@ Menu = m.comp do
          class: m.class do
             "Menu--basic": @attrs.basic
             @attrs.class
+         style: m.style do
+            @attrs.style
          @items.map (item) ~>
             if item.divider
                m \.Menu-divider,

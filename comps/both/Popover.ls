@@ -3,16 +3,15 @@ Popover = m.comp do
       @controlled = \isOpen of @attrs
       @isOpen = void
       @popper = void
+      @attrs.interactionKind ?= \click
 
    oncreate: !->
       if @dom instanceof Element
-         @dom.addEventListener \click (event) !~>
-            if @controlled
-               os.safeCall @onInteraction, !@isOpen
-            else
-               != @isOpen
-               @updateIsOpen!
-            m.redraw!
+         switch @attrs.interactionKind
+         | \click
+            @dom.addEventListener \click @onclickTarget
+         | \contextmenu
+            @dom.addEventListener \contextmenu @onclickTarget
 
    onbeforeupdate: (old) !->
       if @controlled
@@ -25,6 +24,16 @@ Popover = m.comp do
    onupdate: (old) !->
       if @controlled or !old
          @updateIsOpen!
+      if @popper
+         @popper.update!
+
+   onclickTarget: (event) !->
+      if @controlled
+         os.safeCall @onInteraction, !@isOpen
+      else
+         != @isOpen
+         @updateIsOpen!
+      m.redraw!
 
    updateIsOpen: !->
       if @isOpen
@@ -43,6 +52,7 @@ Popover = m.comp do
                   placement: @attrs.placement
                   flips: @attrs.flips
                   padding: 4
+               @dom.classList.add \active
                document.addEventListener \mousedown @onmousedownGlobal
                m.redraw!
       else
@@ -60,6 +70,7 @@ Popover = m.comp do
          popperEl.remove!
          @popper.destroy!
          @popper = void
+         @dom?classList.remove \active
          document.removeEventListener \mousedown @onmousedownGlobal
          m.redraw!
 

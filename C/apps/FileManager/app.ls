@@ -4,10 +4,10 @@ await os.import do
 App = m.comp do
    oninit: !->
       @isDesktop = os.args.isDesktop
+      @path = os.args.path or \/
       @viewType = os.args.viewType or \list
       @sortedBy = os.args.sortedBy or \name
       @sortedOrder = os.args.sortedOrder or 1
-      @path = os.args.path or \/
 
       @dir = void
       @ents = []
@@ -15,10 +15,13 @@ App = m.comp do
       @selData = void
       @selector = void
       @hist = os.createHist!
+      @isShowDesktopIcons = yes
 
    oncreate: !->
       @selector.dom.hidden = yes
       await @goPath @path
+      if @isDesktop
+         await os.requestTaskPerm \desktopBgView
       m.redraw!
 
    goPath: (path, dontPushHist) !->
@@ -37,11 +40,15 @@ App = m.comp do
          val = switch @sortedBy
             | \name => entA.name.localeCompare entB.name
             | \size => entA.size - entB.size
-            | \type => entA.ext.localeCompare entB.ext
+            | \ext => entA.ext.localeCompare entB.ext
             | \mtime => entA.mtime - entB.mtime
          if val
             return val * @sortedOrder
          entryA.name.localeCompare entB.name
+
+   refresh: !->
+      await @goPath @path, yes
+      m.redraw!
 
    openEnt: (ent) !->
       if ent.isDir
@@ -117,6 +124,78 @@ App = m.comp do
          @selData = void
          @selector.dom.hidden = yes
 
+   oncontextmenuEnts: (event) !->
+      if event.target == event.currentTarget
+         os.addContextMenu event,
+            *  text: "Hiển thị"
+               icon: \grid-2
+               subitems:
+                  *  text: "Biểu tượng"
+                     icon: \circle-small if @viewType in [\icons \desktop]
+                  *  text: "Danh sách"
+                     icon: \circle-small if @viewType == \list
+                     visible: !@isDesktop
+                  ,,
+                  *  text: "Hiện các icon trên desktop"
+                     icon: \check if @isShowDesktopIcons
+                     click: !~>
+                        != @isShowDesktopIcons
+            *  text: "Sắp xếp"
+               icon: \arrow-up-arrow-down
+               subitems:
+                  *  text: "Tên"
+                     icon: \circle-small if @sortedBy == \name
+                     click: !~>
+                        @sortedBy = \name
+                        @sortEnts!
+                  *  text: "Kích thước"
+                     icon: \circle-small if @sortedBy == \size
+                     click: !~>
+                        @sortedBy = \size
+                        @sortEnts!
+                  *  text: "Loại"
+                     icon: \circle-small if @sortedBy == \ext
+                     click: !~>
+                        @sortedBy = \ext
+                        @sortEnts!
+                  *  text: "Ngày sửa đổi"
+                     icon: \circle-small if @sortedBy == \mtime
+                     click: !~>
+                        @sortedBy = \mtime
+                        @sortEnts!
+                  ,,
+                  *  text: "Tăng dần"
+                     icon: \circle-small if @sortedOrder == 1
+                     click: !~>
+                        @sortedOrder = 1
+                        @sortEnts!
+                  *  text: "Giảm dần"
+                     icon: \circle-small if @sortedOrder == -1
+                     click: !~>
+                        @sortedOrder = -1
+                        @sortEnts!
+            *  text: "Làm mới"
+               icon: \arrow-rotate-right
+               click: !~>
+                  @refresh!
+            ,,
+            *  text: "Tạo mới"
+               icon: \plus
+               subitems:
+                  *  text: "Thư mục"
+                     icon: \folder
+                  *  text: "Lối tắt"
+                     icon: \square-arrow-up-right
+                  ,,
+                  *  text: "Tập tin"
+                     icon: \file
+            ,,
+            *  text: "Mở Terminal tại đây"
+               icon: \fad:terminal
+            ,,
+            *  text: "Thông tin chi tiết"
+               icon: \circle-info
+
    onclickEnt: (ent, event) !->
       @selEnts = [ent]
       if event.detail % 2 == 0
@@ -129,12 +208,29 @@ App = m.comp do
          *  text: "Mở"
             click: !~>
                @openEnt ent
+         *  text: "Mở bằng"
+            subitems:
+               *  text: "Chọn ứng dụng khác"
+         ,,
+         *  text: "Đặt làm hình nền desktop"
+            icon: \image-landscape
+            visible: ent.ext in <[jpg png webp]>
+            click: !~>
+               os.setDesktopBgImagePath ent.path
+         ,,
+         *  text: "Cắt"
+            icon: \scissors
+         *  text: "Sao chép"
+            icon: \copy
          ,,
          *  text: "Đổi tên"
             icon: \pen-field
          *  text: "Xóa"
             icon: \trash
             color: \red
+         ,,
+         *  text: "Thông tin chi tiết"
+            icon: \circle-info
 
    view: ->
       m \.column.h-100,
@@ -169,15 +265,14 @@ App = m.comp do
             switch @viewType
             | \list
                m Table,
-                  class:
-                     "h-100 p-3"
-                     "pt-0": !@isDesktop
+                  class: "h-100 p-3"
                   striped: yes
                   interactive: yes
                   onpointerdown: @onpointerdownEnts
                   onpointermove: @onpointermoveEnts
                   onpointerup: @onpointerupEnts
                   onlostpointercapture: @onlostpointercaptureEnts
+                  oncontextmenu: @oncontextmenuEnts
                   m \thead,
                      m \tr,
                         m \th.col-6,
@@ -201,5 +296,31 @@ App = m.comp do
                               filesize ent.size
                            m \td,
                               dayjs ent.mtime .format "DD/MM/YYYY HH:mm"
+            | \desktop
+               m \.grid.gap-1.h-100.p-3,
+                  style: m.style do
+                     gridTemplateRows: "repeat(auto-fill, minmax(100px, 1fr))"
+                     gridAutoColumns: 120
+                     gridAutoFlow: \column
+                     backgroundImage: "url(#that)" if os.desktopBgImageDataUrl
+                  onpointerdown: @onpointerdownEnts
+                  onpointermove: @onpointermoveEnts
+                  onpointerup: @onpointerupEnts
+                  onlostpointercapture: @onlostpointercaptureEnts
+                  oncontextmenu: @oncontextmenuEnts
+                  if @isShowDesktopIcons
+                     @ents.map (ent, i) ~>
+                        m \.column.center.middle.gap-2.rounded.text-center.text-white,
+                           key: ent.path
+                           class: m.class do
+                              "bg-blue3 bg-opacity-50": @selEnts.includes ent
+                           "data-i": i
+                           onclick: @onclickEnt.bind void ent
+                           oncontextmenu: @oncontextmenuEnt.bind void ent
+                           m Icon,
+                              name: ent.icon
+                              size: 32
+                           m \.w-100.truncate,
+                              ent.name
             @selector =
                m \.absolute.border.border-blue2.bg-blue2.bg-opacity-25.pe-none.z-10

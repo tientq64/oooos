@@ -11,6 +11,8 @@ class Both
 
       @importedLibs = Object.create null
 
+      @resolvers = {}
+
    oncreate: (vnode) !->
       @dom = vnode.dom
 
@@ -50,7 +52,7 @@ class Both
       else if arr? => [arr]
       else []
 
-   safeCall: (fn, ...args) ->
+   safeApply: (fn, args) ->
       try
          result = fn? ...args
          isErr = no
@@ -60,9 +62,12 @@ class Both
          console.error e
       [result, isErr]
 
+   safeCall: (fn, ...args) ->
+      @safeApply fn, args
+
    safeCastVal: (fn, ...args) ->
       if typeof fn == \function
-         @safeCall fn, ...args
+         @safeApply fn, args
       else
          [fn, no]
 
@@ -101,7 +106,7 @@ class Both
 
    dirPath: (path) ->
       [nodes, root] = @splitPath path
-      root + nodes.slice nodes.length - 1
+      root + nodes.slice 0 -1 .join \/
 
    namePath: (path) ->
       [nodes] = @splitPath path
@@ -122,20 +127,18 @@ class Both
 
    formatIconName: (name) ->
       if name?
-         name = String name
-         if /^\d{2,}$/.test name
-            name = "flaticon:#name"
-         else if !name.includes \:
-            name = "fas:#name"
-         [kind, ...val] = name.split \:
-         val .= join \:
+         [, kind, val, color] = /^(?:(\w+):)?(.+?)(?:!([\da-fA-F]{3,8}))?$/.exec name
+         if /^\d{2,}$/.test val
+            kind ?= \flaticon
+         kind ?= \fas
+         val = switch kind
+            | \flaticon => "https://cdn-icons-png.flaticon.com/128/#{val.slice 0 -3 or 0}/#val.png"
+            | \https \http => "#kind:#val"
+            else val
+         color = \# + color
       else
          kind = \blank
-      val = switch kind
-         | \flaticon => "https://cdn-icons-png.flaticon.com/128/#{val.slice 0 -3 or 0}/#val.png"
-         | \https \http => "#kind:#val"
-         else val
-      [kind, val]
+      [kind, val, color]
 
    formatMenuItems: (items, parentId, groups) ->
       parentId ?= ""
@@ -333,6 +336,15 @@ class Both
       if listCss.length
          css = listCss.join \\n .concat \\n
          stylLibsEl.textContent += css
+
+   addResolver: ->
+      mid = @randomUuid!
+      promise = new Promise (resolve, reject) !~>
+         resolver =
+            resolve: resolve
+            reject: reject
+         @resolvers[mid] = resolver
+      [mid, promise]
 
    oncontextmenuGlobalBoth: (event) !->
       if event.isTrusted

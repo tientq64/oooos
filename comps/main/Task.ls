@@ -8,12 +8,12 @@ class Task extends Both
       @app = app
       @name = app.name
       @path = app.path
-      @appDataPath = app.appDataPath
       @type = app.type
       @icon = app.icon
 
       @pid = os.getIncrId!
       @tid = @randomUuid!
+      @admin = Boolean env.admin ? app.admin ? no
       @title = String env.title ? app.title ? @name
       @minWidth$ = Number env.minWidth ? app.minWidth or 200
       @minHeight$ = Number env.minHeight ? app.minHeight or 80
@@ -24,8 +24,8 @@ class Task extends Both
       @width = Number env.width ? app.width or 800
       @height = Number env.height ? app.height or 600
       @updateSize!
-      @x = Number env.x ? app.x or (os.desktopWidth - @width) / 2
-      @y = Number env.y ? app.y or (os.desktopHeight - @height) / 2
+      @x = Number env.x ? app.x ? (os.desktopWidth - @width) / 2
+      @y = Number env.y ? app.y ? (os.desktopHeight - @height) / 2
       @updateXY!
       @minimized = Boolean env.minimized ? app.minimized ? no
       @maximized = Boolean env.maximized ? app.maximized ? no
@@ -33,12 +33,14 @@ class Task extends Both
       @noHeader$ = Boolean env.noHeader ? app.noHeader ? no
       @updateNoHeader!
       @autoListen = Boolean env.autoListen ? app.autoListen ? yes
-      @args = env.args or app.args or {}
+      @args = env.args ? app.args ? {}
+      @perms = @createTaskPerms env.perms ? app.perms
 
       @closedResolve = void
-      @closed = new Promise (@closedResolve) !~>
+      @closedPromise = new Promise (@closedResolve) !~>
+      @listened = no
       @listenedResolve = void
-      @listened = new Promise (@listenedResolve) !~>
+      @listenedPromise = new Promise (@listenedResolve) !~>
       @moving = no
       @bodyEl = void
       @frameEl = void
@@ -63,7 +65,8 @@ class Task extends Both
          code = importVar codeB
          code = livescript.compile code
          styl = ""
-         try styl = await os.readFile "#@path/app.styl"
+         try
+            styl = await os.readFile "#@path/app.styl"
          styl = importVar stylF
          styl = importVar stylB
          styl = stylus.render styl, compress: yes
@@ -71,11 +74,49 @@ class Task extends Both
          html .= replace /<!-- Code injected by live-server -->.+<\/script>/s ""
          frameEl = document.createElement \iframe
          frameEl.className = \Task-frame
+         frameEl.sandbox = """
+            allow-downloads
+            allow-orientation-lock
+            allow-pointer-lock
+            allow-scripts
+         """
          frameEl.srcdoc = html
          @bodyEl.appendChild frameEl
          @frameEl = frameEl
 
       m.redraw!
+
+   getEntIcon: (ent) ->
+      {ext, name, path} = ent
+      if ent.isFile
+         if name == \app.yml
+            dirPath = @dirPath path
+            if app = os.apps.find (.path == dirPath)
+               app.icon
+            else
+               \file-dashed-line
+         else
+            match ext
+            | /^(txt|json|csv)$/
+               \file-lines
+            | /^(jsx?|tsx?|ls|coffee|s?css|styl|sass|less|html?|pug)$/
+               \file-code
+            | /^(jpe?g|png|gif|webp|svg|ico|jfif|bmp)$/
+               \file-image
+            | /^(mp3|aac|wav|mid)$/
+               \file-audio
+            | /^(mp4|3gp|webm)$/
+               \file-video
+            | /^(zip|rar|tar)$/
+               \file-zipper
+            else
+               \file
+      else
+         switch path
+         | \/C/images
+            \folder-image!f59e0b
+         else
+            \folder!f59e0b
 
    makeEnt: (ent) ->
       stat = await fs.stat ent
@@ -89,6 +130,7 @@ class Task extends Both
          size: stat.size
       if ent.isFile
          ent.ext = @extPath ent.name
+      ent.icon = await @getEntIcon ent
       if children
          ent.children = await Promise.all children.map (@makeEnt <|)
       ent
@@ -133,8 +175,10 @@ class Task extends Both
    readFile: (path, type) ->
       path = @castPath path
       type ?= \text
+      type = \dataURL if type == \dataUrl
       type = @upperFirst type
-      fs.readFile path, type
+      fs.readFile path,
+         type: type
 
    writeFile: (path, data) ->
       path = @castPath path
@@ -146,7 +190,7 @@ class Task extends Both
       result = await fs.unlink path
       result == void
 
-   installApp: (installType, sourcePath, path, appDataPath) !->
+   installApp: (installType, sourcePath, path) !->
       switch installType
       | \boot
          yaml = await m.fetch "#sourcePath/app.yml"
@@ -154,9 +198,9 @@ class Task extends Both
          app =
             name: pack.name
             path: path
-            appDataPath: appDataPath
             type: pack.type or \normal
             icon: pack.icon or \square-dashed
+            admin: pack.admin
             minWidth: pack.minWidth
             minHeight: pack.minHeight
             maxWidth: pack.maxWidth
@@ -170,6 +214,7 @@ class Task extends Both
             fullscreen: pack.fullscreen
             noHeader: pack.noHeader
             autoListen: pack.autoListen
+         app.perms = os.createAppPerms app
          code = await m.fetch "#sourcePath/app.ls"
          await os.writeFile "#path/app.ls" code
          try
@@ -180,7 +225,7 @@ class Task extends Both
       m.redraw!
 
    createAppPerms: (app) ->
-      perms =
+      appPerms =
          *  name: \desktopBgView
             status: \ask
          *  name: \desktopBgEdit
@@ -188,16 +233,60 @@ class Task extends Both
          *  name: \filesView
             status: \ask
             paths:
-               *  path: app.appDataPath
+               *  path: app.path
                   status: \granted
                ...
          *  name: \filesEdit
             status: \ask
             paths:
-               *  path: app.appDataPath
+               *  path: app.path
                   status: \granted
                ...
-      perms
+      appPerms
+
+   createTaskPerms: (permsData) ->
+      taskPerms = structuredClone @app.perms
+      if Array.isArray permsData
+         for name in permsData
+            if typeof name == \string
+               if typeof! name == \Object
+                  [name, val] = Object.entries name .0
+               if taskPerm = taskPerms.find (.name == name)
+                  if name in [\filesView \filesEdit]
+                     if taskPerm.status == \denied
+                        taskPerm.status = \ask
+                     if Array.isArray val
+                        taskPerm.val.push ...val
+                  else
+                     taskPerm.status = \granted
+      taskPerms
+
+   requestTaskPerm: (name, val) ->
+      if taskPerm = @perms.find (.name == name)
+         {status} = taskPerm
+         if @admin
+            status = \granted
+         else
+            if status == \ask
+               unless taskPerm.promise
+                  taskPerm.promise = @askTaskPerm taskPerm
+                     .then !~>
+                        delete taskPerm.promise
+               answer = await taskPerm.promise
+               switch answer
+               | \always \session
+                  status = \granted
+               | \denied
+                  status = \denied
+            taskPerm.status = status
+         if status == \granted
+            taskPerm.requested = yes
+            switch name
+            | \desktopBgView
+               await @sendTA \$desktopBgImageDataUrl os.desktopBgImageDataUrl
+      else
+         throw Error "Quyền không xác định"
+      status
 
    runTask: (name, env) ->
       app = os.apps.find (.name == name)
@@ -207,11 +296,22 @@ class Task extends Both
 
    waitListenedTask: (pid) ->
       if task = os.tasks.find (.pid == pid)
-         task.listened
+         task.listenedPromise
 
    waitClosedTask: (pid) ->
       if task = os.tasks.find (.pid == pid)
-         task.closed
+         task.closedPromise
+
+   setDesktopBgImagePath: (path) !->
+      path = @joinPath @path, path
+      dataUrl = await os.readFile path, \dataUrl
+      os.desktopBgImagePath = path
+      os.desktopBgImageDataUrl = dataUrl
+      for task in os.tasks
+         perm = task.perms.find (.name == \desktopBgView)
+         if perm.requested
+            task.sendTA \$desktopBgImageDataUrl dataUrl
+      m.redraw!
 
    minimize: (val) !->
       val = Boolean val ? !@minimized
@@ -234,11 +334,14 @@ class Task extends Both
 
    close: (val) !->
       if @closedResolve
+         for resolver in @resolvers
+            resolver.resolve!
          if @listenedResolve
             @listenedResolve no
             @listenedResolve = void
          @closedResolve val
          @closedResolve = void
+         @listened = no
          index = os.tasks.indexOf @
          os.tasks.splice index, 1
          m.redraw!
@@ -272,21 +375,29 @@ class Task extends Both
          left: @x
          top: @y
 
-   sendTF: (name, ...args) !->
+   sendTF: (name, ...args) ->
       if @postMessage
+         [mid, promise] = @addResolver!
          @postMessage do
             type: \tf
+            mid: mid
+            pid: @pid
             name: name
             args: args
             \*
+         promise
 
-   sendTA: (name, ...args) !->
+   sendTA: (name, val) ->
       if @postMessage
+         [mid, promise] = @addResolver!
          @postMessage do
             type: \ta
+            mid: mid
+            pid: @pid
             name: name
-            args: args
+            val: val
             \*
+         promise
 
    addRectXYByFrameEl: (rect) !->
       frameRect = @frameEl.getBoundingClientRect!
@@ -319,6 +430,7 @@ class Task extends Both
    startListen: (val) !->
       if @listenedResolve
          val ?= yes
+         @listened = yes
          @listenedResolve val
          @listenedResolve = void
 
@@ -355,16 +467,16 @@ class Task extends Both
          unless popperEl.contains event.target
             close!
       document.addEventListener \mousedown onmousedownGlobal
-      closed = new Promise (resolve2) !~>
+      promise = new Promise (resolve2) !~>
          resolve := resolve2
-      [close, closed]
+      [close, promise]
 
    showSubmenuMenu: (rect, items, isAddFrameXY) ->
-      [close, closed] = @showMenu rect, items, isAddFrameXY, \OS-submenuMenu,
+      [close, promise] = @showMenu rect, items, isAddFrameXY, \OS-submenuMenu,
          placement: \right-start
          offset: [-4 -2]
       os.submenuMenuClose = close
-      closed
+      promise
 
    closeSubmenuMenu: !->
       if os.submenuMenuClose
@@ -373,11 +485,11 @@ class Task extends Both
 
    showContextMenu: (x, y, items, isAddFrameXY) ->
       rect = @makeRectFromXY x, y
-      [close, closed] = @showMenu rect, items, isAddFrameXY, \OS-contextMenu,
-         placement: \right-start
-         offset: [-1 -1]
+      [close, promise] = @showMenu rect, items, isAddFrameXY, \OS-contextMenu,
+         placement: \bottom-start
+         flips: [\top-start]
       os.contextMenuClose = close
-      closed
+      promise
 
    closeContextMenu: !->
       if os.contextMenuClose

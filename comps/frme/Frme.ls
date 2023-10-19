@@ -8,7 +8,6 @@ class Frme extends Both
       @args = void
 
       @bodyEl = void
-      @resolvers = {}
       @listeners = {}
 
       @initFTFMethods!
@@ -25,6 +24,8 @@ class Frme extends Both
          readFile
          writeFile
          deleteFile
+         requestTaskPerm
+         setDesktopBgImagePath
          initTaskFrme
          mousedownFrme
          startListen
@@ -75,33 +76,40 @@ class Frme extends Both
                resolver[methodName] result
                m.redraw!
          | \tf
-            {mid, name, args} = data
+            {mid, pid, name, args} = data
             method = @[name]
-            method.apply void args
+            @safeApply method, args
+            parent.postMessage do
+               type: \tf
+               mid: mid
+               pid: pid
+               \*
             m.redraw!
          | \ta
+            {mid, pid, name, val} = data
+            if name.0 == \$
+               propName = name.substring 1
+               os[propName] = val
             if listener = @listeners[name]
                for callback in listener
-                  try
-                     callback.apply void args
-                  catch
-                     console.error e
-               m.redraw!
+                  @safeCall callback, val
+            parent.postMessage do
+               type: \ta
+               mid: mid
+               pid: pid
+               \*
+            m.redraw!
 
    sendFTF: (name, ...args) ->
-      new Promise (resolve, reject) !~>
-         mid = @randomUuid!
-         resolver =
-            resolve: resolve
-            reject: reject
-         @resolvers[mid] = resolver
-         parent.postMessage do
-            type: \ftf
-            mid: mid
-            tid: @tid
-            name: name
-            args: args
-            \*
+      [mid, promise] = @addResolver!
+      parent.postMessage do
+         type: \ftf
+         mid: mid
+         tid: @tid
+         name: name
+         args: args
+         \*
+      promise
 
    view: ->
       m \.Frme.Portal,

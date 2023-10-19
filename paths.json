@@ -22,6 +22,8 @@
       "/C/apps/Test"
    ],
    "/C/!(apps)/**": [
-      "/C/appData"
+      "/C/images",
+      "/C/images/background",
+      "/C/images/background/gradient.jpg"
    ]
 }

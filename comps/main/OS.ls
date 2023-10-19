@@ -14,8 +14,8 @@ class OS extends Task
       @desktopWidth = void
       @desktopHeight = void
       @desktopTask = void
-      @desktopBgImgPath = void
-      @desktopBgImgDataUrl = void
+      @desktopBgImagePath = void
+      @desktopBgImageDataUrl = void
       @updateDesktopSize!
 
       @time = dayjs!
@@ -37,7 +37,7 @@ class OS extends Task
 
       m.redraw!
 
-      await @runTask \Test
+      # await @runTask \Test
 
    updateDesktopSize: !->
       @desktopWidth = innerWidth
@@ -59,9 +59,14 @@ class OS extends Task
    initFiles: !->
       await fs.init do
          bytes: 1024 * 1024 * 512
-      for path in Paths\/C/apps/*
-         name = @namePath path
-         await @installApp \boot path, path, "/C/appData/#name"
+      for path in Paths"/C/!(apps)/**"
+         if path.includes \.
+            buf = await m.fetch path, \arrayBuffer
+            await @writeFile path, buf
+         else
+            await @createDir path
+      for path in Paths"/C/apps/*"
+         await @installApp \boot path, path
       m.redraw!
 
    initEvents: !->
@@ -71,11 +76,13 @@ class OS extends Task
       m.redraw!
 
    initTasks: !->
+      await @setDesktopBgImagePath \/C/images/background/gradient.jpg
       pid = @runTask \FileManager,
          title: "Desktop"
          fullscreen: yes
          args:
             isDesktop: yes
+            viewType: \desktop
       @desktopTask = @tasks.find (.pid == pid)
       m.redraw!
 
@@ -117,6 +124,13 @@ class OS extends Task
                   result: result
                   isErr: isErr
                   \*
+         | \tf \ta
+            {mid, pid} = data
+            if task = @tasks.find (.pid == pid)
+               if resolver = task.resolvers[mid]
+                  delete task.resolvers[mid]
+                  resolver.resolve!
+                  m.redraw!
 
    view: (vnode) ->
       super vnode,
@@ -140,11 +154,26 @@ class OS extends Task
                      placeholder: "Tìm kiếm"
                m \.OS-taskbarTasks,
                   @tasks.map (task) ~>
-                     m Button,
-                        class: "OS-taskbarTask"
-                        basic: yes
-                        icon: task.icon
-                        task.title
+                     m Popover,
+                        key: task.pid
+                        interactionKind: \contextmenu
+                        content: ~>
+                           m Menu,
+                              style:
+                                 width: 200
+                              basic: yes
+                              items:
+                                 *  header: task.name
+                                 *  text: "Đóng"
+                                    icon: \xmark
+                                    color: \red
+                                    click: !~>
+                                       task.close!
+                        m Button,
+                           class: "OS-taskbarTask"
+                           basic: yes
+                           icon: task.icon
+                           task.title
                m \.OS-taskbarTrays,
                   m Button,
                      basic: yes

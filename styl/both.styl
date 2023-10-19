@@ -40,9 +40,8 @@ small
    font-size: $fontSizes[5]
 
 .Icon
-   width: 1.25em
-   height: 1.25em
-   min-width: 1.25em
+   min-width: 20px
+   min-height: 20px
    display: inline-flex
    justify-content: center
    align-items: center
@@ -53,7 +52,7 @@ small
    image-rendering: -webkit-optimize-contrast
 
 .Icon--compact
-   width: unset
+   width: unset !important
    min-width: unset
 
 .Button
@@ -340,6 +339,9 @@ for k, val in $nonGrayColors
       border-radius: 6px
       background: #fff
 
+   .truncate
+      text-truncate: ellipsis
+
    for val in absolute relative fixed sticky
       .{val}
          position: val
@@ -495,6 +497,10 @@ for k, val in $nonGrayColors
       font-style: italic
    .text-no-italic
       font-style: normal
+
+   for val in left center right justify
+      .text-{val}
+         text-align: val
 
    for val in nowrap pre pre-line pre-wrap
       .text-{val}

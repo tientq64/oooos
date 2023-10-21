@@ -10,11 +10,16 @@ class Task extends Both
       @path = app.path
       @type = app.type
       @icon = app.icon
+      @version = app.version
+      @author = app.author
+      @description = app.description
+      @license = app.license
 
       @pid = os.getIncrId!
       @tid = @randomUuid!
       @admin = Boolean env.admin ? app.admin ? no
       @title = String env.title ? app.title ? @name
+      @focusable = Boolean env.focusable ? app.focusable ? yes
       @minWidth$ = Number env.minWidth ? app.minWidth or 200
       @minHeight$ = Number env.minHeight ? app.minHeight or 80
       @updateMinSize!
@@ -24,8 +29,8 @@ class Task extends Both
       @width = Number env.width ? app.width or 800
       @height = Number env.height ? app.height or 600
       @updateSize!
-      @x = Number env.x ? app.x ? (os.desktopWidth - @width) / 2
-      @y = Number env.y ? app.y ? (os.desktopHeight - @height) / 2
+      @x = Number env.x ? app.x ? (os.desktopWidth - @width) / 2 + @random -32 32
+      @y = Number env.y ? app.y ? (os.desktopHeight - @height) / 2 + @random -32 32
       @updateXY!
       @minimized = Boolean env.minimized ? app.minimized ? no
       @maximized = Boolean env.maximized ? app.maximized ? no
@@ -42,11 +47,16 @@ class Task extends Both
       @listenedResolve = void
       @listenedPromise = new Promise (@listenedResolve) !~>
       @moving = no
+      @resizeData = void
       @bodyEl = void
       @frameEl = void
       @postMessage = void
 
       os.tasks.push @
+
+      @focus!
+
+      m.redraw!
 
    oncreate: (vnode) !->
       super vnode
@@ -76,10 +86,14 @@ class Task extends Both
          frameEl.className = \Task-frame
          frameEl.sandbox = """
             allow-downloads
+            allow-forms
             allow-orientation-lock
             allow-pointer-lock
             allow-scripts
          """
+         frameEl.allow = "
+            clipboard-read;
+         "
          frameEl.srcdoc = html
          @bodyEl.appendChild frameEl
          @frameEl = frameEl
@@ -97,18 +111,20 @@ class Task extends Both
                \file-dashed-line
          else
             match ext
-            | /^(txt|json|csv)$/
+            | /^(txt|md|log)$/
                \file-lines
-            | /^(jsx?|tsx?|ls|coffee|s?css|styl|sass|less|html?|pug)$/
+            | /^(jsx?|tsx?|ls|coffee|css|styl|s[ac]ss|less|html?|pug|json|csv|xml)$/
                \file-code
-            | /^(jpe?g|png|gif|webp|svg|ico|jfif|bmp)$/
+            | /^(jpe?g|png|gif|webp|svg|ico|jfif|bmp|heic)$/
                \file-image
-            | /^(mp3|aac|wav|mid)$/
+            | /^(mp3|aac|wav|mid|flac|ogg)$/
                \file-audio
-            | /^(mp4|3gp|webm)$/
+            | /^(mp4|3gp|webm|avi)$/
                \file-video
-            | /^(zip|rar|tar)$/
+            | /^(zip|rar|tar|7z)$/
                \file-zipper
+            | /^(pdf)$/
+               \file-pdf
             else
                \file
       else
@@ -200,7 +216,10 @@ class Task extends Both
             path: path
             type: pack.type or \normal
             icon: pack.icon or \square-dashed
+            version: pack.version
+            author: pack.author
             admin: pack.admin
+            focusable: pack.focusable
             minWidth: pack.minWidth
             minHeight: pack.minHeight
             maxWidth: pack.maxWidth
@@ -214,6 +233,9 @@ class Task extends Both
             fullscreen: pack.fullscreen
             noHeader: pack.noHeader
             autoListen: pack.autoListen
+            supportedExts: @castArr pack.supportedExts
+            description: pack.description
+            license: pack.license
          app.perms = os.createAppPerms app
          code = await m.fetch "#sourcePath/app.ls"
          await os.writeFile "#path/app.ls" code
@@ -222,7 +244,20 @@ class Task extends Both
             await os.writeFile "#path/app.styl" styl
          await os.writeFile "#path/app.yml" yaml
          os.apps.push app
+         for extName in app.supportedExts
+            @addDefaultAppExt extName, app.name
       m.redraw!
+
+   getVapps: ->
+      vapps = os.apps.map (app) ~>
+         name: app.name
+         path: app.path
+         type: app.type
+         icon: app.icon
+         version: app.version
+         author: app.author
+         description: app.description
+      vapps
 
    createAppPerms: (app) ->
       appPerms =
@@ -283,16 +318,49 @@ class Task extends Both
             taskPerm.requested = yes
             switch name
             | \desktopBgView
-               await @sendTA \$desktopBgImageDataUrl os.desktopBgImageDataUrl
+               await @emit \desktopBgView \$desktopBgImageDataUrl os.desktopBgImageDataUrl
       else
          throw Error "Quyền không xác định"
       status
+
+   getOrAddExt: (name) ->
+      if /^[a-z\d]+$/.test name
+         ext = os.exts.find (.name == name)
+         unless ext
+            ext =
+               name: name
+               defaultAppNames: []
+            os.exts.push ext
+      else
+         throw Error "Tên phần mở rộng không hợp lệ"
+      ext
+
+   addDefaultAppExt: (extName, appName) !->
+      ext = @getOrAddExt extName
+      app = os.apps.find (.name == appName)
+      if app
+         unless ext.defaultAppNames.includes appName
+            ext.defaultAppNames.push appName
+      else
+         throw Error "Không tìm thấy ứng dụng '#appName'"
+
+   emit: (permName, propName, val) ->
+      perm = @perms.find (.name == permName)
+      if perm.requested
+         @sendTA propName, val
+
+   emitAll: (permName, propName, val) ->
+      Promise.all os.tasks.map (task) ~>
+         task.emit permName, propName, val
 
    runTask: (name, env) ->
       app = os.apps.find (.name == name)
       if app
          task = new Task app, env
-         task.pid
+         m.redraw!
+      else
+         throw Error "Không tìm thấy ứng dụng '#name'"
+      task.pid
 
    waitListenedTask: (pid) ->
       if task = os.tasks.find (.pid == pid)
@@ -307,16 +375,21 @@ class Task extends Both
       dataUrl = await os.readFile path, \dataUrl
       os.desktopBgImagePath = path
       os.desktopBgImageDataUrl = dataUrl
-      for task in os.tasks
-         perm = task.perms.find (.name == \desktopBgView)
-         if perm.requested
-            task.sendTA \$desktopBgImageDataUrl dataUrl
+      @emitAll \desktopBgView \$desktopBgImageDataUrl dataUrl
       m.redraw!
+
+   focus: !->
+      if @focusable and os.task != @
+         @z = os.tasks.length
+         @minimize no
+         os.updateFocusedTask!
+         m.redraw!
 
    minimize: (val) !->
       val = Boolean val ? !@minimized
       if val != @minimized
          @minimized = val
+         os.updateFocusedTask!
          m.redraw!
 
    maximize: (val) !->
@@ -334,7 +407,7 @@ class Task extends Both
 
    close: (val) !->
       if @closedResolve
-         for resolver in @resolvers
+         for , resolver of @resolvers
             resolver.resolve!
          if @listenedResolve
             @listenedResolve no
@@ -347,23 +420,24 @@ class Task extends Both
          m.redraw!
 
    updateMinSize: !->
-      @minWidth = @clamp @minWidth$, 200 os.desktopWidth
-      @minHeight = @clamp @minHeight$, 80 os.desktopHeight
+      @minWidth = Math.round @clamp @minWidth$, 200 os.desktopWidth
+      @minHeight = Math.round @clamp @minHeight$, 80 os.desktopHeight
 
    updateMaxSize: !->
-      @maxWidth = @clamp @maxWidth$ ? os.desktopWidth, @minWidth, os.desktopWidth
-      @maxHeight = @clamp @maxHeight$ ? os.desktopHeight, @minHeight, os.desktopHeight
+      @maxWidth = Math.round @clamp @maxWidth$ ? os.desktopWidth, @minWidth, os.desktopWidth
+      @maxHeight = Math.round @clamp @maxHeight$ ? os.desktopHeight, @minHeight, os.desktopHeight
 
    updateSize: !->
-      @width = @clamp @width, @minWidth, @maxWidth
-      @height = @clamp @height, @minHeight, @maxHeight
+      @width = Math.round @clamp @width, @minWidth, @maxWidth
+      @height = Math.round @clamp @height, @minHeight, @maxHeight
 
    updateXY: !->
-      @x = @clamp @x, 0 os.desktopWidth - @width
-      @y = @clamp @y, 0 os.desktopHeight - @height
+      @x = Math.floor @clamp @x, 0 os.desktopWidth - @width
+      @y = Math.floor @clamp @y, 0 os.desktopHeight - @height
 
    updateNoHeader: !->
       @noHeader = @noHeader$ or @fullscreen
+      m.redraw!
 
    updateSizeDom: !->
       @dom.style <<< m.style do
@@ -416,6 +490,7 @@ class Task extends Both
       args: @args
 
    mousedownFrme: (eventData) !->
+      @focus!
       frameRect = @frameEl.getBoundingClientRect!
       eventData.clientX += frameRect.x
       eventData.clientY += frameRect.y
@@ -496,6 +571,9 @@ class Task extends Both
          os.contextMenuClose!
          os.contextMenuClose = void
 
+   onmousedown: (event) !->
+      @focus!
+
    onpointerdownTitle: (event) !->
       if event.buttons == 1
          event.target.setPointerCapture event.pointerId
@@ -506,12 +584,40 @@ class Task extends Both
       if @moving
          @x += event.movementX
          @y += event.movementY
+         if @maximized
+            @x = event.x - @width / 2
+            @y = 0
+            @updateXY!
+            @maximize no
          @updateXYDom!
 
    onlostpointercaptureTitle: (event) !->
+      if event.y < 0
+         @maximize yes
       @moving = no
       @updateXY!
       @updateXYDom!
+
+   onclickTitle: (event) !->
+      if event.detail % 2 == 0
+         @maximize!
+
+   oncontextmenuTitle: (event) !->
+      os.addContextMenu event,
+         *  text: "Thu nhỏ"
+            icon: \minus
+            click: !~>
+               @minimize!
+         *  text: "Phóng to"
+            icon: \plus
+            click: !~>
+               @maximize!
+         ,,
+         *  text: "Đóng"
+            icon: \xmark
+            color: \red
+            click: !~>
+               @close!
 
    onclickMinimize: (event) !->
       @minimize!
@@ -522,6 +628,49 @@ class Task extends Both
    onclickClose: (event) !->
       @close!
 
+   onpointerdownResize: (event) !->
+      if event.buttons == 1
+         event.target.setPointerCapture event.pointerId
+         sideX = event.target.dataset.x
+         sideY = event.target.dataset.y
+         right = @x + @width
+         bottom = @y + @height
+         @resizeData =
+            rect: {@x, @y, @width, @height}
+            bound:
+               minX: Math.max 0, right - @maxWidth
+               minY: Math.max 0, bottom - @maxHeight
+               maxX: right - @minWidth
+               maxY: bottom - @minHeight
+               maxWidth: Math.min @maxWidth, if sideX < 0 => right else os.desktopWidth - @x
+               maxHeight: Math.min @maxHeight, if sideY < 0 => bottom else os.desktopHeight - @y
+            moveX: 0
+            moveY: 0
+
+   onpointermoveResize: (event) !->
+      event.redraw = no
+      if @resizeData
+         sideX = Number event.target.dataset.x
+         sideY = Number event.target.dataset.y
+         {rect, bound, moveX, moveY} = @resizeData
+         if sideX
+            moveX += event.movementX
+            @width = os.clamp rect.width + moveX * sideX, @minWidth, bound.maxWidth
+            if sideX < 0
+               @x = os.clamp rect.x + moveX, bound.minX, bound.maxX
+            @resizeData.moveX = moveX
+         if sideY
+            moveY += event.movementY
+            @height = os.clamp rect.height + moveY * sideY, @minHeight, bound.maxHeight
+            if sideY < 0
+               @y = os.clamp rect.y + moveY, bound.minY, bound.maxY
+            @resizeData.moveY = moveY
+         @updateSizeDom!
+         @updateXYDom!
+
+   onlostpointercaptureResize: (event) !->
+      @resizeData = void
+
    view: (vnode, vdom) ->
       m \.Task,
          class: m.class do
@@ -529,17 +678,23 @@ class Task extends Both
             "Task--maximized": @maximized
             "Task--fullscreen": @fullscreen
             "Task--noHeader": @noHeader
+         style: m.style do
+            zIndex: @z
+         inert: @minimized
+         onmousedown: @onmousedown
          m \.Task-header,
             inert: @noHeader
             m \.Task-title,
                onpointerdown: @onpointerdownTitle
                onpointermove: @onpointermoveTitle
                onlostpointercapture: @onlostpointercaptureTitle
+               onclick: @onclickTitle
+               oncontextmenu: @oncontextmenuTitle
                m Icon,
                   class: "mr-2"
                   name: @icon
                @title
-            m \.Task-actions,
+            m \.Task-buttons,
                m Button,
                   basic: yes
                   small: yes
@@ -560,3 +715,17 @@ class Task extends Both
             if vdom
                m \.Task-frame,
                   vdom
+         if !@maximized and !@fullscreen
+            m \.Task-resizes,
+               @@resizeSides.map (side) ~>
+                  m \.Task-resize,
+                     key: side
+                     "data-x": side.0
+                     "data-y": side.1
+                     onpointerdown: @onpointerdownResize
+                     onpointermove: @onpointermoveResize
+                     onlostpointercapture: @onlostpointercaptureResize
+
+   @resizeSides =
+      [-1 0] [1 0] [0 -1] [0 1]
+      [-1 -1] [1 1] [-1 1] [1 -1]

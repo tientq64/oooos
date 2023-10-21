@@ -270,6 +270,7 @@ class Both
    createPopper: (targetEl, popperEl, opts = {}) ->
       Popper.createPopper targetEl, popperEl,
          placement: opts.placement or \auto
+         strategy: \fixed
          modifiers:
             *  name: \offset
                options:

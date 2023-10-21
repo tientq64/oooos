@@ -5,9 +5,12 @@ class OS extends Task
       @isOS = yes
 
       app.perms = @createAppPerms app
-
       @apps = [app]
+
       @tasks = []
+      @task = void
+
+      @exts = []
 
       @taskbarHeight = 39
 
@@ -37,7 +40,7 @@ class OS extends Task
 
       m.redraw!
 
-      # await @runTask \Test
+      await @runTask \Test
 
    updateDesktopSize: !->
       @desktopWidth = innerWidth
@@ -76,15 +79,31 @@ class OS extends Task
       m.redraw!
 
    initTasks: !->
-      await @setDesktopBgImagePath \/C/images/background/gradient.jpg
+      await @setDesktopBgImagePath \/C/images/background/gradient-blue-pink.jpg
       pid = @runTask \FileManager,
          title: "Desktop"
+         focusable: no
          fullscreen: yes
          args:
             isDesktop: yes
             viewType: \desktop
       @desktopTask = @tasks.find (.pid == pid)
       m.redraw!
+
+   updateFocusedTask: !->
+      tasks = os.tasks.toSorted (taskA, taskB) ~>
+         taskA.z - taskB.z
+      for task, i in tasks
+         task.z = i
+      @task = tasks.findLast (task) ~>
+         task.focusable and !task.minimized
+      m.redraw!
+
+   onclickTask: (task, event) !->
+      if os.task == task
+         task.minimize!
+      else
+         task.focus!
 
    onresizeGlobal: (event) !->
       @updateDesktopSize!
@@ -171,8 +190,10 @@ class OS extends Task
                                        task.close!
                         m Button,
                            class: "OS-taskbarTask"
+                           active: @task == task
                            basic: yes
                            icon: task.icon
+                           onclick: @onclickTask.bind void task
                            task.title
                m \.OS-taskbarTrays,
                   m Button,

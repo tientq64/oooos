@@ -25,7 +25,11 @@ class Frme extends Both
          writeFile
          deleteFile
          requestTaskPerm
+         runTask
          setDesktopBgImagePath
+         minimize
+         maximize
+         close
          initTaskFrme
          mousedownFrme
          startListen

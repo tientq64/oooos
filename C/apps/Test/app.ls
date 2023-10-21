@@ -157,7 +157,6 @@ App = m.comp do
             dex: "Tổ mà nó tạo ra trên sa mạc có hình dạng cong như cái chén, nếu rơi vào thì không thể thoát ra."
 
    oncreate: !->
-      await os.requestTaskPerm \desktopBgView
 
    view: ->
       m \.row.wrap.middle.gap-3.h-100.p-3.ov-auto,
@@ -177,10 +176,6 @@ App = m.comp do
          if @boolTestPatchDom
             m \p,
                "Đoạn văn này xuất hiện chỉ với mục đích để test bản vá DOM."
-
-         m \.col-12 "Test app perms:"
-         m \p,
-            os.desktopBgImageDataUrl
 
          m \.col-12 "Popover:"
          m Popover,

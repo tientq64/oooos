@@ -5,14 +5,13 @@ await os.import do
 
 App = m.comp do
    oninit: !->
-      @path = os.args.path or \/
+      @path = os.absPath os.args.path ? \/
 
       @input = ""
       @lines = []
 
    oncreate: !->
       @execInput "path"
-      @execInput "ls \\C"
 
    execInput: (input) !->
       input .= trim!
@@ -57,15 +56,19 @@ App = m.comp do
 
    ls: (path) ->
       path ?= @path
-      path = os.joinPath @path, path
+      path = os.joinPath \/ @path, path
       ents = await os.readDir path
+      ents.sort (entA, entB) ~>
+         if val = entB.isDir - entA.isDir
+            return val
+         entA.name.localeCompare entB.name
       data =
          *  "Tên"
             "Kích thước"
             "Ngày sửa đổi"
          ...ents.map (ent) ~>
             *  ent.name
-               filesize ent.size
+               ent.isFile and filesize ent.size or \-
                dayjs ent.mtime .format "DD/MM/YYYY HH:mm"
       table.table data,
          border: table.getBorderCharacters \void
@@ -73,6 +76,9 @@ App = m.comp do
             paddingLeft: 0
             paddingRight: 3
          drawHorizontalLine: ~>
+
+   exit: (val) ->
+      os.close val
 
    scrollToBottom: !->
       requestAnimationFrame !~>
@@ -110,6 +116,7 @@ App = m.comp do
                fill: yes
                m TextInput,
                   class: "font-mono"
+                  autoFocus: yes
                   value: @input
                   onchange: @onchangeInput
                m Button,

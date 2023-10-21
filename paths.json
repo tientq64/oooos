@@ -19,11 +19,13 @@
    "/C/apps/*": [
       "/C/apps/FileManager",
       "/C/apps/Terminal",
-      "/C/apps/Test"
+      "/C/apps/Test",
+      "/C/apps/TextArea"
    ],
    "/C/!(apps)/**": [
       "/C/images",
       "/C/images/background",
-      "/C/images/background/gradient.jpg"
+      "/C/images/background/gradient-blue-pink.jpg",
+      "/C/images/background/man-near-torii-gate.jpg"
    ]
 }

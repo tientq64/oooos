@@ -5,6 +5,7 @@ Button = m.comp do
    view: ->
       m \button.Button,
          class: m.class do
+            "active": @attrs.active
             "disabled": @attrs.disabled
             "Button--basic": @attrs.basic
             "Button--bordered": !@attrs.basic

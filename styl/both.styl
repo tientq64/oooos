@@ -22,6 +22,7 @@ body
    line-height: 1.25
    overflow: hidden
    overflow-wrap: anywhere
+   background: #fff
    color: $gray0
    user-select: none
    cursor: default
@@ -330,6 +331,10 @@ for k, val in $nonGrayColors
    box-shadow: 0 0 0 1px $gray2, $shadow
    z-index: 1020
 
+.Popover-content
+   border-radius: 8px
+   background: #fff
+
 {{styl}}
 
 #m
@@ -341,6 +346,32 @@ for k, val in $nonGrayColors
 
    .truncate
       text-truncate: ellipsis
+
+   .row
+      display: flex
+      flex-direction: row
+   .column
+      display: flex
+      flex-direction: column
+
+   for i in 1..12
+      val = floor(i / 12 * 100%)
+      :not(.column) > .col-{i}
+         width: val
+      .column > .col-{i}
+         height: val
+   .col
+      flex: 1
+   .col-0
+      flex: initial
+   :not(.column)
+      > .col
+      > .col-0
+         min-width: 0
+   .column
+      > .col
+      > .col-0
+         min-height: 0
 
    for val in absolute relative fixed sticky
       .{val}
@@ -360,6 +391,12 @@ for k, val in $nonGrayColors
          max-width: val2
       .max-h-{val}
          max-height: val2
+   .w-auto
+      width: auto
+   .h-auto
+      height: auto
+   .min-w-auto
+      min-width: auto
 
    props = {
       m: margin
@@ -413,40 +450,29 @@ for k, val in $nonGrayColors
    .hidden, [hidden]
       display: none
 
-   .row
-      display: flex
-   .column
-      display: flex
-      flex-direction: column
-
-   for i in 1..12
-      val = floor(i / 12 * 100%)
-      :not(.column) > .col-{i}
-         width: val
-      .column > .col-{i}
-         height: val
-   .col
-      flex: 1
-   .col-0
-      flex: initial
-
    .wrap
       flex-wrap: wrap
    .nowrap
       flex-wrap: nowrap
 
-   :not(.column).start, .column.top
+   :not(.column).start
+   .column.top
       justify-content: flex-start
-   :not(.column).center, .column.middle
+   :not(.column).center
+   .column.middle
       justify-content: center
-   :not(.column).end, .column.bottom
+   :not(.column).end
+   .column.bottom
       justify-content: flex-end
 
-   :not(.column).top, .column.start
+   :not(.column).top
+   .column.start
       align-items: flex-start
-   :not(.column).middle, .column.center
+   :not(.column).middle
+   .column.center
       align-items: center
-   :not(.column).bottom, .column.end
+   :not(.column).bottom
+   .column.end
       align-items: flex-end
 
    for val, i in $spaces
@@ -507,6 +533,18 @@ for k, val in $nonGrayColors
          white-space: val
    .text-wrap
       white-space: normal
+
+   for val in left-top right-top left-bottom right-bottom left right top bottom center
+      .bg-{val}
+         background-position: replace("-", " ", val)
+
+   for val in contain cover auto
+      .bg-{val}
+         background-size: val
+
+   for val in repeat repeat-x repeat-y no-repeat
+      .bg-{val}
+         background-repeat: val
 
    for k, tones in $colors
       for val, i in tones

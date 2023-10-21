@@ -26,7 +26,10 @@ App = m.comp do
 
    goPath: (path, dontPushHist) !->
       path = os.absPath path
-      @ents = await os.readDir path
+      dir = await os.getEnt path
+      ents = await os.readDir dir
+      @dir = dir
+      @ents = ents
       @sortEnts!
       @path = path
       unless dontPushHist
@@ -44,7 +47,7 @@ App = m.comp do
             | \mtime => entA.mtime - entB.mtime
          if val
             return val * @sortedOrder
-         entryA.name.localeCompare entB.name
+         entA.name.localeCompare entB.name
 
    refresh: !->
       await @goPath @path, yes
@@ -192,6 +195,10 @@ App = m.comp do
             ,,
             *  text: "Mở Terminal tại đây"
                icon: \fad:terminal
+               click: !~>
+                  os.runTask \Terminal,
+                     args:
+                        path: @dir.path
             ,,
             *  text: "Thông tin chi tiết"
                icon: \circle-info
@@ -293,11 +300,11 @@ App = m.comp do
                            m \td,
                               ent.name
                            m \td,
-                              filesize ent.size
+                              ent.isFile and filesize ent.size or \-
                            m \td,
                               dayjs ent.mtime .format "DD/MM/YYYY HH:mm"
             | \desktop
-               m \.grid.gap-1.h-100.p-3,
+               m \.grid.gap-1.h-100.p-3.bg-center.bg-no-repeat.bg-black,
                   style: m.style do
                      gridTemplateRows: "repeat(auto-fill, minmax(100px, 1fr))"
                      gridAutoColumns: 120

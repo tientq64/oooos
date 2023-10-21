@@ -6,6 +6,7 @@
 .OS-tasks
    position: relative
    flex: 1
+   z-index: 0
 
 .OS-taskbar
    padding: 4px 8px
@@ -18,6 +19,7 @@
    z-index: 1
 
 .OS-taskbarTasks
+   min-width: 0
    display: flex
    flex: 1
    justify-content: center
@@ -38,6 +40,10 @@
    border-radius: 6px
    background: #fff
    box-shadow: 0 0 0 1px $gray2, $shadow
+
+   > .Menu
+      border-radius: 8px
+      background: #fff
 
 .OS-submenuMenu
    z-index: 1040
@@ -65,9 +71,7 @@
 
    > .Task-body
       margin: 4px 0 0
-
-      > .Task-frame
-         border-radius: 0
+      border-radius: 0
 
 .Task--fullscreen
    position: fixed
@@ -79,9 +83,7 @@
 
    > .Task-body
       margin: 0
-
-      > .Task-frame
-         border-radius: 0
+      border-radius: 0
 
 .Task--noHeader
    > .Task-header
@@ -92,8 +94,11 @@
 .Task-header
    height: 24px
    margin: 4px 4px 0
+   border-radius: 6px 6px 0 0
    display: flex
    align-items: stretch
+   background: #fff
+   z-index: 2
 
 .Task-title
    padding: 0 8px
@@ -105,7 +110,10 @@
 .Task-body
    position: relative
    margin: 4px
+   border-radius: 6px
    flex: 1
+   overflow: hidden
+   z-index: 1
 
 .Task-frame
    position: absolute
@@ -113,5 +121,33 @@
    height: 100%
    max-height: 100%
    border: 0
-   border-radius: 6px
-   overflow: hidden
+
+.Task-resizes
+   position: absolute
+   inset: -4px
+   pointer-events: none
+
+.Task-resize
+   position: absolute
+   width: 16px
+   height: 16px
+   pointer-events: auto
+   cursor: nwse-resize
+
+   &[data-x="0"]
+      width: 100%
+      height: 8px
+      cursor: ns-resize
+   &[data-x="1"]
+      right: 0
+
+   &[data-y="0"]
+      width: 8px
+      height: 100%
+      cursor: ew-resize
+   &[data-y="1"]
+      bottom: 0
+
+   &[data-x="-1"][data-y="1"]
+   &[data-x="1"][data-y="-1"]
+      cursor: nesw-resize

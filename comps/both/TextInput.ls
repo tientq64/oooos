@@ -2,6 +2,10 @@ TextInput = m.comp do
    oninit: !->
       @input = void
 
+   oncreate: !->
+      if @attrs.autoFocus
+         @input.dom.focus!
+
    oninputInput: (event) !->
       @attrs.onchange? event
 

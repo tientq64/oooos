@@ -21,12 +21,12 @@ dark()
       {block}
 
 $hexToRgba(hex, alpha)
-   if typeof(hex) == "string"
+   if type(hex) == "string"
       hex = convert(hex)
    r = red(hex)
    g = green(hex)
    b = blue(hex)
-   s("rgba(%s,%s,%s,%s)", r, g, b, alpha)
+   "rgba(%s, %s, %s, %s)" % (r g b alpha)
 
 $gray0 = #1f2937
 $gray1 = #4b5563
@@ -108,7 +108,7 @@ $sides4 = {
 }
 
 $sans = unquote('"Arial", sans-serif')
-$serif = unquote('"Georgia", serif')
+$serif = unquote('"Noto Serif", serif')
 $mono = unquote('"D2Coding", monospace')
 
 $fontSizes = 35px 28px 22px 18px 16px 13px

@@ -35,6 +35,7 @@ PasswordInput = m.comp do
                maxLength: @attrs.maxLength
                pattern: @attrs.pattern
                required: @attrs.required
+               autoFocus: @attrs.autoFocus
                placeholder: @attrs.placeholder
                value: @attrs.value
                onchange: @attrs.onchange

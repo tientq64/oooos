@@ -2,3 +2,4 @@ name: TextArea
 icon: fad:pen-to-square
 admin: yes
 supportedExts: [txt, md, log]
+pinnedTaskbar: yes

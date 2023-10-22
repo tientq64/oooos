@@ -18,6 +18,7 @@ class Frme extends Both
          existsEnt
          moveEnt
          copyEnt
+         openEnt
          createDir
          readDir
          deleteDir
@@ -36,6 +37,8 @@ class Frme extends Both
          showSubmenuMenu
          closeSubmenuMenu
          showContextMenu
+         showMenubarMenu
+         closeMenubarMenu
       ]>
       for let methodName in methodNames
          method = (...args) ->
@@ -50,14 +53,24 @@ class Frme extends Both
       window.addEventListener \mousedown @onmousedownGlobal
       window.addEventListener \message @onmessageGlobal
 
-   addListener: (name, callback) !->
-      listener = @listeners[][name]
-      listener.push callback
+   addListener: (name, callback, isResponder) !->
+      listener = @listeners[name]
+      unless listener
+         listener =
+            responder: void
+            callbacks: []
+         @listeners[name] = listener
+      if isResponder
+         listener.responder = callback
+      else
+         listener.callbacks.push callback
 
    removeListener: (name, callback) !->
       if listener = @listeners[name]
-         index = listener.indexOf callback
-         listener.splice index, 1
+         if listener.responder == callback
+            listener.responder = void
+         index = listener.callbacks.indexOf callback
+         listener.callbacks.splice index, 1
 
    mousedownMain: (eventData) !->
       mouseEvent = new MouseEvent \mousedown eventData
@@ -82,11 +95,13 @@ class Frme extends Both
          | \tf
             {mid, pid, name, args} = data
             method = @[name]
-            @safeApply method, args
+            [result, isErr] = await @safeAsyncApply method, args
             parent.postMessage do
                type: \tf
                mid: mid
                pid: pid
+               result: result
+               isErr: isErr
                \*
             m.redraw!
          | \ta
@@ -95,12 +110,16 @@ class Frme extends Both
                propName = name.substring 1
                os[propName] = val
             if listener = @listeners[name]
-               for callback in listener
-                  @safeCall callback, val
+               for callback in listener.callbacks
+                  @safeSyncCall callback, val
+               if listener.responder
+                  [result, isErr] = await @safeAsyncCall listener.responder, val
             parent.postMessage do
                type: \ta
                mid: mid
                pid: pid
+               result: result
+               isErr: isErr
                \*
             m.redraw!
 

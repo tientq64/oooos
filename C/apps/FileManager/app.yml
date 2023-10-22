@@ -1,3 +1,4 @@
 name: FileManager
 icon: fad:folder-open
 admin: yes
+pinnedTaskbar: yes

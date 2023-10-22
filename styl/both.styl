@@ -19,6 +19,7 @@ body
    height: 100%
    margin: 0
    font-family: $sans
+   font-size: 16px
    line-height: 1.25
    overflow: hidden
    overflow-wrap: anywhere
@@ -113,6 +114,9 @@ for k, val in $nonGrayColors
 .Button--small
    min-height: 24px
 
+.Button-text
+   pointer-events: none
+
 .TextInput
    width: 200px
    height: 30px
@@ -156,18 +160,49 @@ for k, val in $nonGrayColors
    color: $gray0
    outline: 0
 
+   +dark()
+      color: #fff
+
+   &:has(+ .TextInput-rightIcon)
+      margin-right: -28px
+      padding-right: 36px
+
    &::placeholder
       color: $gray1
 
       +dark()
          color: $gray3
 
-   &:has(+ .TextInput-rightIcon)
-      margin-right: -28px
-      padding-right: 36px
+.Textarea
+   width: 200px
+   min-height: 30px
+   padding: 8px
+   border: 1px solid $gray2
+   border-radius: 6px
+   font: inherit
+   background: #fff
+   color: $gray0
+   outline: 0
+
+   &:focus
+      border-color: #0000
+      box-shadow: 0 0 0 1px $blue1, 0 0 0 4px rgba($blue1, .4)
+
+      +dark()
+         box-shadow: 0 0 0 1px $blue3, 0 0 0 4px rgba($blue3, .4)
 
    +dark()
+      background: $gray0
       color: #fff
+
+   &::placeholder
+      color: $gray1
+
+      +dark()
+         color: $gray3
+
+.Textarea--fill
+   width: 100%
 
 .InputGroup
    display: inline-flex
@@ -278,6 +313,11 @@ for k, val in $nonGrayColors
 .Menu-divider
    margin: 4px 0
    border-top: 1px solid $gray2
+
+.Menubar
+   display: flex
+   justify-content: flex-start
+   align-items: center
 
 .Table
    border-radius: 6px

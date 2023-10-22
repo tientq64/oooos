@@ -21,7 +21,8 @@ App = m.comp do
       @selector.dom.hidden = yes
       await @goPath @path
       if @isDesktop
-         await os.requestTaskPerm \desktopBgView
+         os.requestTaskPerm \taskbarView
+         os.requestTaskPerm \desktopBgView
       m.redraw!
 
    goPath: (path, dontPushHist) !->
@@ -50,12 +51,13 @@ App = m.comp do
          entA.name.localeCompare entB.name
 
    refresh: !->
-      await @goPath @path, yes
-      m.redraw!
+      @goPath @path, yes
 
-   openEnt: (ent) !->
-      if ent.isDir
+   openEnt: (ent, appName) !->
+      if ent.isDir and !@isDesktop
          @goPath ent.path
+      else
+         os.openEnt ent, appName
 
    onclickBack: (event) !->
       path = @hist.back!
@@ -298,6 +300,9 @@ App = m.comp do
                            onclick: @onclickEnt.bind void ent
                            oncontextmenu: @oncontextmenuEnt.bind void ent
                            m \td,
+                              m Icon,
+                                 class: "mr-2"
+                                 name: ent.icon
                               ent.name
                            m \td,
                               ent.isFile and filesize ent.size or \-
@@ -306,6 +311,8 @@ App = m.comp do
             | \desktop
                m \.grid.gap-1.h-100.p-3.bg-center.bg-no-repeat.bg-black,
                   style: m.style do
+                     paddingTop: os.taskbarHeight + 12 if os.taskbarPosition == \top
+                     paddingBottom: os.taskbarHeight + 12 if os.taskbarPosition == \bottom
                      gridTemplateRows: "repeat(auto-fill, minmax(100px, 1fr))"
                      gridAutoColumns: 120
                      gridAutoFlow: \column

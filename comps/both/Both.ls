@@ -52,7 +52,7 @@ class Both
       else if arr? => [arr]
       else []
 
-   safeApply: (fn, args) ->
+   safeSyncApply: (fn, args) ->
       try
          result = fn? ...args
          isErr = no
@@ -62,12 +62,31 @@ class Both
          console.error e
       [result, isErr]
 
-   safeCall: (fn, ...args) ->
-      @safeApply fn, args
+   safeSyncCall: (fn, ...args) ->
+      @safeSyncApply fn, args
 
-   safeCastVal: (fn, ...args) ->
+   safeSyncCastVal: (fn, ...args) ->
       if typeof fn == \function
-         @safeApply fn, args
+         @safeSyncApply fn, args
+      else
+         [fn, no]
+
+   safeAsyncApply: (fn, args) ->
+      try
+         result = await fn? ...args
+         isErr = no
+      catch e
+         result = e
+         isErr = yes
+         console.error e
+      [result, isErr]
+
+   safeAsyncCall: (fn, ...args) ->
+      @safeAsyncApply fn, args
+
+   safeAsyncCastVal: (fn, ...args) ->
+      if typeof fn == \function
+         @safeAsyncApply fn, args
       else
          [fn, no]
 
@@ -208,6 +227,18 @@ class Both
       if newItems.length == 0
          newItems = void
       [newItems, clicks, newGroups]
+
+   formatMenus: (menus) ->
+      newMenus = []
+      menus = @castArr menus
+      for menu, i in menus
+         newMenu =
+            id: "menus:#i"
+            text: menu.text
+            icon: menu.icon
+            items: menu.items
+         newMenus.push newMenu
+      newMenus
 
    createHist: (items, max) ->
       items = @castNewArr items
@@ -361,7 +392,7 @@ class Both
             for items2, i in list
                if typeof items2 == \function
                   items2 = await items2
-               [items3, clicks3, groups3] = @formatMenuItems items2, i, groups
+               [items3, clicks3, groups3] = @formatMenuItems items2, "contextMenu:#i", groups
                clicks <<< clicks3
                for k, group of groups3
                   groups[][k]push ...group

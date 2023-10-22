@@ -13,6 +13,7 @@ app =
    focusable: no
    fullscreen: yes
    noHeader: yes
+   skipTaskbar: yes
    description: pack.description
    license: pack.license
 

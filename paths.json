@@ -5,9 +5,11 @@
       "/comps/both/Icon.ls",
       "/comps/both/InputGroup.ls",
       "/comps/both/Menu.ls",
+      "/comps/both/Menubar.ls",
       "/comps/both/PasswordInput.ls",
       "/comps/both/Popover.ls",
       "/comps/both/Table.ls",
+      "/comps/both/Textarea.ls",
       "/comps/both/TextInput.ls"
    ],
    "/comps/main/!(OS.ls)": [

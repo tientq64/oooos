@@ -37,7 +37,9 @@ class Task extends Both
       @fullscreen = Boolean env.fullscreen ? app.fullscreen ? no
       @noHeader$ = Boolean env.noHeader ? app.noHeader ? no
       @updateNoHeader!
+      @skipTaskbar = Boolean env.skipTaskbar ? app.skipTaskbar ? no
       @autoListen = Boolean env.autoListen ? app.autoListen ? yes
+      @supportedExts = app.supportedExts
       @args = env.args ? app.args ? {}
       @perms = @createTaskPerms env.perms ? app.perms
 
@@ -155,6 +157,12 @@ class Task extends Both
       ent = await fs.getEntry path
       @makeEnt ent
 
+   castEnt: (path) ->
+      if typeof! path == \Object
+         path
+      else
+         @getEnt path
+
    existsEnt: (path) ->
       path = @castPath path
       fs.exists path
@@ -172,6 +180,21 @@ class Task extends Both
       ent = await fs.copy path, newPath,
          create: isCreate
       @makeEnt ent
+
+   openEnt: (ent, appName) !->
+      ent = await @castEnt ent
+      if ent.isDir
+         os.runTask \FileManager,
+            args:
+               path: ent.path
+      else
+         unless appName
+            if ext = os.exts.find (.name == ent.ext)
+               appName = ext.defaultAppNames.0
+         if appName
+            pid = os.runTask appName
+            await os.waitListenedTask pid
+            await os.emitTask pid, \ents [ent]
 
    createDir: (path) ->
       dir = await fs.mkdir path
@@ -206,7 +229,7 @@ class Task extends Both
       result = await fs.unlink path
       result == void
 
-   installApp: (installType, sourcePath, path) !->
+   installApp: (installType, sourcePath, path, env = {}) !->
       switch installType
       | \boot
          yaml = await m.fetch "#sourcePath/app.yml"
@@ -232,11 +255,14 @@ class Task extends Both
             maximized: pack.maximized
             fullscreen: pack.fullscreen
             noHeader: pack.noHeader
+            skipTaskbar: pack.skipTaskbar
             autoListen: pack.autoListen
             supportedExts: @castArr pack.supportedExts
             description: pack.description
             license: pack.license
-         app.perms = os.createAppPerms app
+         app <<<
+            pinnedTaskbar: env.pinnedTaskbar ? pack.pinnedTaskbar
+            perms: os.createAppPerms app
          code = await m.fetch "#sourcePath/app.ls"
          await os.writeFile "#path/app.ls" code
          try
@@ -245,7 +271,7 @@ class Task extends Both
          await os.writeFile "#path/app.yml" yaml
          os.apps.push app
          for extName in app.supportedExts
-            @addDefaultAppExt extName, app.name
+            @addDefaultAppNameExt extName, app.name
       m.redraw!
 
    getVapps: ->
@@ -261,17 +287,21 @@ class Task extends Both
 
    createAppPerms: (app) ->
       appPerms =
+         *  name: \taskbarView
+            status: \ask
+         *  name: \taskbarEdit
+            status: \ask
          *  name: \desktopBgView
             status: \ask
          *  name: \desktopBgEdit
             status: \ask
-         *  name: \filesView
+         *  name: \entsView
             status: \ask
             paths:
                *  path: app.path
                   status: \granted
                ...
-         *  name: \filesEdit
+         *  name: \entsEdit
             status: \ask
             paths:
                *  path: app.path
@@ -287,7 +317,7 @@ class Task extends Both
                if typeof! name == \Object
                   [name, val] = Object.entries name .0
                if taskPerm = taskPerms.find (.name == name)
-                  if name in [\filesView \filesEdit]
+                  if name in [\entsView \entsEdit]
                      if taskPerm.status == \denied
                         taskPerm.status = \ask
                      if Array.isArray val
@@ -317,25 +347,28 @@ class Task extends Both
          if status == \granted
             taskPerm.requested = yes
             switch name
+            | \taskbarView
+               await @permEmit name, \$taskbarPosition os.taskbarPosition
+               await @permEmit name, \$taskbarHeight os.taskbarHeight
             | \desktopBgView
-               await @emit \desktopBgView \$desktopBgImageDataUrl os.desktopBgImageDataUrl
+               await @permEmit name, \$desktopBgImageDataUrl os.desktopBgImageDataUrl
       else
          throw Error "Quyền không xác định"
       status
 
-   getOrAddExt: (name) ->
-      if /^[a-z\d]+$/.test name
-         ext = os.exts.find (.name == name)
+   getOrAddExt: (extName) ->
+      if /^[a-z\d]+$/.test extName
+         ext = os.exts.find (.name == extName)
          unless ext
             ext =
-               name: name
+               name: extName
                defaultAppNames: []
             os.exts.push ext
       else
          throw Error "Tên phần mở rộng không hợp lệ"
       ext
 
-   addDefaultAppExt: (extName, appName) !->
+   addDefaultAppNameExt: (extName, appName) !->
       ext = @getOrAddExt extName
       app = os.apps.find (.name == appName)
       if app
@@ -344,14 +377,21 @@ class Task extends Both
       else
          throw Error "Không tìm thấy ứng dụng '#appName'"
 
-   emit: (permName, propName, val) ->
+   emit: (evtName, val) ->
+      @sendTA evtName, val
+
+   emitAll: (evtName, val) ->
+      Promise.all os.tasks.map (task) ~>
+         task.emit evtName, val
+
+   permEmit: (permName, propName, val) ->
       perm = @perms.find (.name == permName)
       if perm.requested
          @sendTA propName, val
 
-   emitAll: (permName, propName, val) ->
+   permEmitAll: (permName, propName, val) ->
       Promise.all os.tasks.map (task) ~>
-         task.emit permName, propName, val
+         task.permEmit permName, propName, val
 
    runTask: (name, env) ->
       app = os.apps.find (.name == name)
@@ -362,6 +402,9 @@ class Task extends Both
          throw Error "Không tìm thấy ứng dụng '#name'"
       task.pid
 
+   getTask: (pid) ->
+      os.tasks.find (.pid == pid)
+
    waitListenedTask: (pid) ->
       if task = os.tasks.find (.pid == pid)
          task.listenedPromise
@@ -370,20 +413,33 @@ class Task extends Both
       if task = os.tasks.find (.pid == pid)
          task.closedPromise
 
+   emitTask: (pid, evtName, val) ->
+      task = @getTask pid
+      task.emit evtName, val
+
+   setTaskbarPosition: (val) !->
+      unless os.taskbarPosition == val
+         os.taskbarPosition = val
+         os.permEmitAll \taskbarView \$taskbarPosition val
+      m.redraw!
+
    setDesktopBgImagePath: (path) !->
       path = @joinPath @path, path
       dataUrl = await os.readFile path, \dataUrl
       os.desktopBgImagePath = path
       os.desktopBgImageDataUrl = dataUrl
-      @emitAll \desktopBgView \$desktopBgImageDataUrl dataUrl
+      @permEmitAll \desktopBgView \$desktopBgImageDataUrl dataUrl
       m.redraw!
 
    focus: !->
-      if @focusable and os.task != @
-         @z = os.tasks.length
-         @minimize no
-         os.updateFocusedTask!
-         m.redraw!
+      if @focusable
+         if os.task != @
+            @z = os.tasks.length
+            @minimize no
+            os.updateFocusedTask!
+      else
+         os.task = void
+      m.redraw!
 
    minimize: (val) !->
       val = Boolean val ? !@minimized
@@ -417,6 +473,7 @@ class Task extends Both
          @listened = no
          index = os.tasks.indexOf @
          os.tasks.splice index, 1
+         os.updateFocusedTask!
          m.redraw!
 
    updateMinSize: !->
@@ -571,8 +628,17 @@ class Task extends Both
          os.contextMenuClose!
          os.contextMenuClose = void
 
-   onmousedown: (event) !->
-      @focus!
+   showMenubarMenu: (rect, items, isAddFrameXY) ->
+      [close, promise] = @showMenu rect, items, isAddFrameXY, \OS-menubarMenu,
+         placement: \bottom-start
+         flips: [\right-start]
+      os.menubarMenuClose = close
+      promise
+
+   closeMenubarMenu: !->
+      if os.menubarMenuClose
+         os.menubarMenuClose!
+         os.menubarMenuClose = void
 
    onpointerdownTitle: (event) !->
       if event.buttons == 1
@@ -681,7 +747,6 @@ class Task extends Both
          style: m.style do
             zIndex: @z
          inert: @minimized
-         onmousedown: @onmousedown
          m \.Task-header,
             inert: @noHeader
             m \.Task-title,
@@ -693,7 +758,8 @@ class Task extends Both
                m Icon,
                   class: "mr-2"
                   name: @icon
-               @title
+               m \.Task-titleText,
+                  @title
             m \.Task-buttons,
                m Button,
                   basic: yes

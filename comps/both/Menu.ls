@@ -60,8 +60,8 @@ Menu = m.comp do
                   @setItem item
                   rect = os.getRect targetEl
                   if clickedItem = await os.showSubmenuMenu rect, item.subitems, os.isFrme
-                     @clicks[clickedItem.id]? clickedItem
-                     @attrs.onItemClick? clickedItem
+                     os.safeSyncCall @clicks[clickedItem.id], clickedItem
+                     os.safeSyncCall @attrs.onItemClick, clickedItem
                   @setItem void
                , 200
 

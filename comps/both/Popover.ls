@@ -29,7 +29,7 @@ Popover = m.comp do
 
    onclickTarget: (event) !->
       if @controlled
-         os.safeCall @onInteraction, !@isOpen
+         os.safeSyncCall @onInteraction, !@isOpen
       else
          != @isOpen
          @updateIsOpen!
@@ -38,7 +38,7 @@ Popover = m.comp do
    updateIsOpen: !->
       if @isOpen
          unless @popper
-            [content, isErr] = os.safeCastVal @attrs.content, @closeContent
+            [content, isErr] = os.safeSyncCastVal @attrs.content, @closeContent
             if content? and !isErr and @dom instanceof Element
                popperEl = document.createElement \div
                popperEl.className = "Popover-popper Portal"
@@ -78,7 +78,7 @@ Popover = m.comp do
       popperEl = @popper.state.elements.popper
       unless popperEl.contains event.target
          if @controlled
-            os.safeCall @onInteraction, no
+            os.safeSyncCall @onInteraction, no
          else
             @closePopper!
 

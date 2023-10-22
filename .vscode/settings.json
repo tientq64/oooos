@@ -1,7 +1,9 @@
 {
    "editor.tabSize": 3,
    "editor.insertSpaces": true,
+
    "files.insertFinalNewline": true,
+
    "[yaml]": {
       "editor.tabSize": 3
    }

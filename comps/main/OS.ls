@@ -12,6 +12,7 @@ class OS extends Task
 
       @exts = []
 
+      @taskbarPosition = \bottom
       @taskbarHeight = 39
 
       @desktopWidth = void
@@ -29,6 +30,7 @@ class OS extends Task
 
       @submenuMenuClose = void
       @contextMenuClose = void
+      @menubarMenuClose = void
 
    oncreate: (vnode) !->
       super vnode
@@ -84,6 +86,7 @@ class OS extends Task
          title: "Desktop"
          focusable: no
          fullscreen: yes
+         skipTaskbar: yes
          args:
             isDesktop: yes
             viewType: \desktop
@@ -99,11 +102,54 @@ class OS extends Task
          task.focusable and !task.minimized
       m.redraw!
 
-   onclickTask: (task, event) !->
+   getTaskbarPinnedAppsAndTasks: ->
+      pinnedApps = os.apps
+         .filter (app) ~>
+            app.pinnedTaskbar and !app.skipTaskbar
+         .map (app) ~>
+            task = os.tasks.find (task2) ~>
+               task2.app == app and !task2.skipTaskbar
+            task or app
+      tasks = os.tasks
+         .filter (task) ~>
+            !task.skipTaskbar and !pinnedApps.includes task
+      [...pinnedApps, ...tasks]
+
+   oncontextmenuTaskbar: (event) !->
+      if event.target == event.currentTarget
+         @addContextMenu event,
+            *  text: "Vị trí taskbar"
+               icon: \arrows-up-down-left-right
+               subitems:
+                  *  text: "Trên"
+                     icon: \circle-small if @taskbarPosition == \top
+                     click: !~>
+                        @setTaskbarPosition \top
+                  *  text: "Dưới"
+                     icon: \circle-small if @taskbarPosition == \bottom
+                     click: !~>
+                        @setTaskbarPosition \bottom
+            *  text: "Khóa vị trí taskbar"
+            ,,
+            *  text: "Trình quản lý tác vụ"
+               icon: \fad:rectangle-history
+
+   onclickTaskbarTask: (task, event) !->
       if os.task == task
          task.minimize!
       else
          task.focus!
+
+   onclickTaskbarPinnedApp: (app, event) !->
+      @runTask app.name
+
+   onmousedownOS: (event) !->
+      for task in os.tasks
+         if task.isTask and task.dom?contains event.target
+            task.focus!
+            return
+      unless event.target.closest \.OS-stopMouseDown
+         @focus!
 
    onresizeGlobal: (event) !->
       @updateDesktopSize!
@@ -131,12 +177,8 @@ class OS extends Task
          | \ftf
             {mid, tid, name, args} = data
             if task = @tasks.find (.tid == tid)
-               try
-                  method = task[name]
-                  result = await method.apply void args
-               catch
-                  result = e
-                  isErr = yes
+               method = task[name]
+               [result, isErr] = await @safeAsyncApply method, args
                task.postMessage do
                   type: \ftf
                   mid: mid
@@ -144,70 +186,102 @@ class OS extends Task
                   isErr: isErr
                   \*
          | \tf \ta
-            {mid, pid} = data
+            {mid, pid, result, isErr} = data
             if task = @tasks.find (.pid == pid)
                if resolver = task.resolvers[mid]
                   delete task.resolvers[mid]
-                  resolver.resolve!
+                  methodName = isErr and \reject or \resolve
+                  resolver[methodName] result
                   m.redraw!
 
    view: (vnode) ->
       super vnode,
          m \.OS.Portal,
-            m \.OS-tasks,
-               @tasks.map (task) ~>
-                  if task.type != \os
-                     m task,
-                        key: task.pid
-                  else
-                     m.fragment do
-                        key: task.pid
-            m \.OS-taskbar,
-               m \.OS-taskbarHome,
-                  m Button,
-                     basic: yes
-                     icon: \fad:home
-               m \.OS-taskbarSearch,
-                  m TextInput,
-                     icon: \search
-                     placeholder: "Tìm kiếm"
-               m \.OS-taskbarTasks,
+            class: m.class do
+               "OS--taskbar-#@taskbarPosition"
+            onmousedown: @onmousedownOS
+            m \.OS-body,
+               m \.OS-tasks,
                   @tasks.map (task) ~>
-                     m Popover,
-                        key: task.pid
-                        interactionKind: \contextmenu
-                        content: ~>
-                           m Menu,
-                              style:
-                                 width: 200
-                              basic: yes
-                              items:
-                                 *  header: task.name
-                                 *  text: "Đóng"
-                                    icon: \xmark
-                                    color: \red
-                                    click: !~>
-                                       task.close!
-                        m Button,
-                           class: "OS-taskbarTask"
-                           active: @task == task
-                           basic: yes
-                           icon: task.icon
-                           onclick: @onclickTask.bind void task
-                           task.title
-               m \.OS-taskbarTrays,
-                  m Button,
-                     basic: yes
-                     icon: \wifi
-                  m Button,
-                     basic: yes
-                     icon: \volume
-                  m Button,
-                     basic: yes
-                     icon: \battery
-                  m Button,
-                     basic: yes
-                     @time.format "HH:mm DD/MM/YYYY"
-                  m Button,
-                     basic: yes
-                     icon: \message
+                     if task.isOS
+                        m.fragment do
+                           key: task.pid
+                     else
+                        m task,
+                           key: task.pid
+               m \.OS-taskbar,
+                  oncontextmenu: @oncontextmenuTaskbar
+                  m \.OS-taskbarHome,
+                     m Button,
+                        basic: yes
+                        icon: \fad:home
+                  m \.OS-taskbarSearch,
+                     m TextInput,
+                        icon: \search
+                        placeholder: "Tìm kiếm"
+                  m \.OS-taskbarTasks,
+                     @getTaskbarPinnedAppsAndTasks!map (item) ~>
+                        if item instanceof Task
+                           m Popover,
+                              key: item.pid
+                              interactionKind: \contextmenu
+                              content: ~>
+                                 m Menu,
+                                    style:
+                                       width: 200
+                                    basic: yes
+                                    items:
+                                       *  header: item.name
+                                       *  text: "Đóng"
+                                          icon: \xmark
+                                          color: \red
+                                          click: !~>
+                                             item.close!
+                              m Button,
+                                 class: "OS-taskbarTask OS-stopMouseDown"
+                                 active: @task == item
+                                 basic: yes
+                                 icon: item.icon
+                                 onclick: @onclickTaskbarTask.bind void item
+                                 item.title
+                        else
+                           m Popover,
+                              key: item.path
+                              interactionKind: \contextmenu
+                              content: (close) ~>
+                                 m Menu,
+                                    style:
+                                       width: 200
+                                    basic: yes
+                                    items:
+                                       *  header: item.name
+                                       *  text: "Mở"
+                                          click: !~>
+                                             close!
+                                             @runTask item.name
+                                       ,,
+                                       *  text: "Bỏ ghim"
+                                          icon: \thumbtack
+                                          click: !~>
+                                             close!
+                              m Button,
+                                 class: "OS-taskbarPinnedApp OS-stopMouseDown"
+                                 basic: yes
+                                 icon: item.icon
+                                 onclick: @onclickTaskbarPinnedApp.bind void item
+                  m \.OS-taskbarTrays,
+                     m Button,
+                        basic: yes
+                        icon: \wifi
+                     m Button,
+                        basic: yes
+                        icon: \volume
+                     m Button,
+                        basic: yes
+                        icon: \battery
+                     m Button,
+                        basic: yes
+                        @time.format "HH:mm DD/MM/YYYY"
+                     m Button,
+                        basic: yes
+                        icon: \message

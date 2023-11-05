@@ -6,6 +6,9 @@ class Task extends Both
       @isTask = yes
 
       @app = app
+      @env = env
+      @parentTask = env.parentTask
+
       @name = app.name
       @path = app.path
       @type = app.type
@@ -19,6 +22,7 @@ class Task extends Both
       @tid = @randomUuid!
       @admin = Boolean env.admin ? app.admin ? no
       @title = String env.title ? app.title ? @name
+      @isModal = Boolean env.isModal ? app.isModal ? no
       @focusable = Boolean env.focusable ? app.focusable ? yes
       @minWidth$ = Number env.minWidth ? app.minWidth or 200
       @minHeight$ = Number env.minHeight ? app.minHeight or 80
@@ -35,28 +39,37 @@ class Task extends Both
       @minimized = Boolean env.minimized ? app.minimized ? no
       @maximized = Boolean env.maximized ? app.maximized ? no
       @fullscreen = Boolean env.fullscreen ? app.fullscreen ? no
-      @noHeader$ = Boolean env.noHeader ? app.noHeader ? no
-      @updateNoHeader!
+      @useContentSize = Boolean env.useContentSize ? app.useContentSize ? no
+      @noHeader = Boolean env.noHeader ? app.noHeader ? no
       @skipTaskbar = Boolean env.skipTaskbar ? app.skipTaskbar ? no
+      @hidden = Boolean env.hidden ? app.hidden ? @useContentSize
       @autoListen = Boolean env.autoListen ? app.autoListen ? yes
       @supportedExts = app.supportedExts
+      @openEntsSameTask = Boolean env.openEntsSameTask ? app.openEntsSameTask ? no
       @args = env.args ? app.args ? {}
       @perms = @createTaskPerms env.perms ? app.perms
 
+      @isSandbox = @type !in [\os \core]
+      @closed = no
       @closedResolve = void
       @closedPromise = new Promise (@closedResolve) !~>
+      @isAskingClose = no
       @listened = no
       @listenedResolve = void
       @listenedPromise = new Promise (@listenedResolve) !~>
       @moving = no
       @resizeData = void
+      @isUnmaximized = no
+      @minimizeAnim = void
       @bodyEl = void
       @frameEl = void
       @postMessage = void
+      @loaded = no
 
       os.tasks.push @
 
-      @focus!
+      unless @minimized
+         @focus!
 
       m.redraw!
 
@@ -64,43 +77,71 @@ class Task extends Both
       super vnode
 
       @bodyEl = @dom.querySelector \.Task-body
+      @stylEl = @dom.querySelector \.Task-styl
+
       @updateSizeDom!
       @updateXYDom!
-
-      if @fullscreen
-         @setFullscreen yes
+      @updateMinimizeDom yes if @minimized
 
       unless @isOS
-         importVar = eval importVarCode
-         code = await os.readFile "#@path/app.ls"
-         code = importVar codeF
-         code = importVar codeB
-         code = livescript.compile code
-         styl = ""
-         try
-            styl = await os.readFile "#@path/app.styl"
-         styl = importVar stylF
-         styl = importVar stylB
-         styl = stylus.render styl, compress: yes
-         html = importVar htmlF
-         html .= replace /<!-- Code injected by live-server -->.+<\/script>/s ""
-         frameEl = document.createElement \iframe
-         frameEl.className = \Task-frame
-         frameEl.sandbox = """
-            allow-downloads
-            allow-forms
-            allow-orientation-lock
-            allow-pointer-lock
-            allow-scripts
-         """
-         frameEl.allow = "
-            clipboard-read;
-         "
-         frameEl.srcdoc = html
-         @bodyEl.appendChild frameEl
-         @frameEl = frameEl
+         switch @type
+         | \core
+            styl = ""
+            try
+               styl = await os.readFile "#@path/app.styl"
+            styl = stylus.render styl,
+               compress: yes
+            @stylEl.textContent = styl
+            code = await os.readFile "#@path/app.ls"
+            code = """
+               (App, os) ->
+                  #{@indent code, 1 yes}
+                  App
+            """
+            code = livescript.compile code,
+               bare: yes
+            frameEl = document.createElement \div
+            frameEl.className = \Task-frame
+            @frameEl = frameEl
+            @bodyEl.appendChild frameEl
+            comp = (eval code) void @
+            m.mount frameEl, comp
+
+         else
+            importVar = eval importVarCode
+            styl = ""
+            try
+               styl = await os.readFile "#@path/app.styl"
+            styl = importVar stylF
+            styl = importVar stylB
+            styl = stylus.render styl,
+               compress: yes
+            code = await os.readFile "#@path/app.ls"
+            code = importVar codeF
+            code = importVar codeB
+            code = livescript.compile code
+            html = importVar htmlF
+            html .= replace /<!-- Code injected by live-server -->.+<\/script>/s ""
+            frameEl = document.createElement \iframe
+            frameEl.className = \Task-frame
+            @frameEl = frameEl
+            @bodyEl.appendChild frameEl
+            frameEl.sandbox = """
+               allow-downloads
+               allow-forms
+               allow-orientation-lock
+               allow-pointer-lock
+               allow-scripts
+            """
+            frameEl.allow = "
+               clipboard-read;
+            "
+            frameEl.srcdoc = html
 
       m.redraw!
+
+   getNoHeader: ->
+      @noHeader or @fullscreen
 
    getEntIcon: (ent) ->
       {ext, name, path} = ent
@@ -135,6 +176,17 @@ class Task extends Both
             \folder-image!f59e0b
          else
             \folder!f59e0b
+
+   getBatteryIcon: ->
+      if os.batteryLevel?
+         switch
+         | os.batteryLevel <= 0.01 => \battery-empty
+         | os.batteryLevel <= 0.2 => \battery-low
+         | os.batteryLevel <= 0.4 => \battery-quarter
+         | os.batteryLevel <= 0.6 => \battery-half
+         | os.batteryLevel <= 0.8 => \battery-three-quarters
+         else \battery-full
+      else \battery-exclamation
 
    makeEnt: (ent) ->
       stat = await fs.stat ent
@@ -183,18 +235,33 @@ class Task extends Both
 
    openEnt: (ent, appName) !->
       ent = await @castEnt ent
-      if ent.isDir
-         os.runTask \FileManager,
-            args:
-               path: ent.path
-      else
-         unless appName
-            if ext = os.exts.find (.name == ent.ext)
-               appName = ext.defaultAppNames.0
-         if appName
-            pid = os.runTask appName
+      if appName
+         if app = @getApp appName
+            pid = os.runTask app.name
             await os.waitListenedTask pid
-            await os.emitTask pid, \ents [ent]
+            os.emitTask pid, \ents [ent]
+      else
+         if ent.isDir
+            os.runTask \FileManager,
+               args:
+                  path: ent.path
+         else
+            if ent.name == \app.yml
+               yaml = await os.readFile ent
+               pack = jsyaml.safeLoad yaml
+               if app = os.apps.find (.name == pack.name)
+                  os.runTask app.name
+            else
+               if app = os.apps.find (.supportedExts.includes ent.ext)
+                  pid = os.runTask app.name
+                  await os.waitListenedTask pid
+                  os.emitTask pid, \ents [ent]
+               else
+                  os.openWithEnt ent
+
+   openWithEnt: (ent) !->
+      if app = await @pickOpenWithVappByEnt ent
+         @openEnt ent, app.name
 
    createDir: (path) ->
       dir = await fs.mkdir path
@@ -254,10 +321,14 @@ class Task extends Both
             minimized: pack.minimized
             maximized: pack.maximized
             fullscreen: pack.fullscreen
+            useContentSize: pack.useContentSize
             noHeader: pack.noHeader
             skipTaskbar: pack.skipTaskbar
+            isModal: pack.isModal
+            hidden: pack.hidden
             autoListen: pack.autoListen
             supportedExts: @castArr pack.supportedExts
+            openEntsSameTask: pack.openEntsSameTask
             description: pack.description
             license: pack.license
          app <<<
@@ -270,20 +341,27 @@ class Task extends Both
             await os.writeFile "#path/app.styl" styl
          await os.writeFile "#path/app.yml" yaml
          os.apps.push app
-         for extName in app.supportedExts
-            @addDefaultAppNameExt extName, app.name
+         vapps = @getVapps!
+         @permEmitAll \appsView \$apps vapps
       m.redraw!
 
    getVapps: ->
       vapps = os.apps.map (app) ~>
-         name: app.name
-         path: app.path
-         type: app.type
-         icon: app.icon
-         version: app.version
-         author: app.author
-         description: app.description
+         @makeVapp app
       vapps
+
+   makeVapp: (app) ->
+      name: app.name
+      path: app.path
+      type: app.type
+      icon: app.icon
+      version: app.version
+      author: app.author
+      supportedExts: app.supportedExts
+      description: app.description
+
+   getApp: (appName) ->
+      os.apps.find (.name == appName)
 
    createAppPerms: (app) ->
       appPerms =
@@ -294,6 +372,10 @@ class Task extends Both
          *  name: \desktopBgView
             status: \ask
          *  name: \desktopBgEdit
+            status: \ask
+         *  name: \appsView
+            status: \ask
+         *  name: \tasksView
             status: \ask
          *  name: \entsView
             status: \ask
@@ -320,8 +402,9 @@ class Task extends Both
                   if name in [\entsView \entsEdit]
                      if taskPerm.status == \denied
                         taskPerm.status = \ask
-                     if Array.isArray val
-                        taskPerm.val.push ...val
+                        taskPerm.paths.push val.map (path) ~>
+                           path: path
+                           status: \granted
                   else
                      taskPerm.status = \granted
       taskPerms
@@ -352,30 +435,12 @@ class Task extends Both
                await @permEmit name, \$taskbarHeight os.taskbarHeight
             | \desktopBgView
                await @permEmit name, \$desktopBgImageDataUrl os.desktopBgImageDataUrl
+            | \appsView
+               vapps = @getVapps!
+               await @permEmit name, \$apps vapps
       else
          throw Error "Quyền không xác định"
       status
-
-   getOrAddExt: (extName) ->
-      if /^[a-z\d]+$/.test extName
-         ext = os.exts.find (.name == extName)
-         unless ext
-            ext =
-               name: extName
-               defaultAppNames: []
-            os.exts.push ext
-      else
-         throw Error "Tên phần mở rộng không hợp lệ"
-      ext
-
-   addDefaultAppNameExt: (extName, appName) !->
-      ext = @getOrAddExt extName
-      app = os.apps.find (.name == appName)
-      if app
-         unless ext.defaultAppNames.includes appName
-            ext.defaultAppNames.push appName
-      else
-         throw Error "Không tìm thấy ứng dụng '#appName'"
 
    emit: (evtName, val) ->
       @sendTA evtName, val
@@ -393,7 +458,11 @@ class Task extends Both
       Promise.all os.tasks.map (task) ~>
          task.permEmit permName, propName, val
 
-   runTask: (name, env) ->
+   eventEmit: (eventName, val) ->
+      @sendTA eventName, val
+
+   runTask: (name, env = {}) ->
+      env.parentTask ?= @
       app = os.apps.find (.name == name)
       if app
          task = new Task app, env
@@ -414,8 +483,12 @@ class Task extends Both
          task.closedPromise
 
    emitTask: (pid, evtName, val) ->
-      task = @getTask pid
-      task.emit evtName, val
+      if task = @getTask pid
+         task.emit evtName, val
+
+   closeTask: (pid, val) !->
+      if task = @getTask pid
+         await task.close val
 
    setTaskbarPosition: (val) !->
       unless os.taskbarPosition == val
@@ -431,14 +504,25 @@ class Task extends Both
       @permEmitAll \desktopBgView \$desktopBgImageDataUrl dataUrl
       m.redraw!
 
-   focus: !->
+   focus: (skipFocusModals) !->
       if @focusable
          if os.task != @
+            if @isModal and @parentTask
+               @parentTask.focus yes
             @z = os.tasks.length
             @minimize no
             os.updateFocusedTask!
+            @focusModals! unless skipFocusModals
       else
          os.task = void
+         @focusModals! unless skipFocusModals
+      m.redraw!
+
+   focusModals: !->
+      modal = os.tasks.find (task) ~>
+         task.isModal and task.parentTask == @
+      if modal
+         modal.focus!
       m.redraw!
 
    minimize: (val) !->
@@ -446,34 +530,121 @@ class Task extends Both
       if val != @minimized
          @minimized = val
          os.updateFocusedTask!
+         @updateMinimizeDom!
          m.redraw!
 
    maximize: (val) !->
       val = Boolean val ? !@maximized
       if val != @maximized
          @maximized = val
+         @isUnmaximized = !val
          m.redraw!
 
    setFullscreen: (val) !->
       val = Boolean val ? !@fullscreen
       if val != @fullscreen
          @fullscreen = val
-         @updateNoHeader!
          m.redraw!
 
+   fitContentSize: (width, height) !->
+      @dom.classList.add \Task--useContentSize
+      unless @isSandbox
+         {width, height} = @frameEl.getBoundingClientRect!
+      width = Math.ceil width
+      height = Math.ceil height
+      @dom.classList.remove \Task--useContentSize
+      width += 8
+      height += 8
+      unless @getNoHeader!
+         height += 28
+      @x += (@width - width) / 2
+      @y += (@height - height) / 2
+      @width = width
+      @height = height
+      @updateSize!
+      @updateXY!
+      @updateSizeDom!
+      @updateXYDom!
+      @show!
+      m.redraw!
+
+   show: !->
+      if @hidden
+         @hidden = no
+         if @loaded == 0
+            @loaded = yes
+         m.redraw!
+
+   alert: (message, opts) ->
+      opts = @castNewObj opts
+      pid = os.runTask \Popup,
+         width: opts.width
+         height: opts.height
+         maxHeight: opts.height or opts.maxHeight
+         args:
+            type: \alert
+            message: message
+            opts: opts
+         parentTask: @
+      os.waitClosedTask pid
+
+   confirm: (message, opts) ->
+      opts = @castNewObj opts, \cancelable
+      !!= opts.cancelable
+      pid = os.runTask \Popup,
+         width: opts.width
+         height: opts.height
+         maxHeight: opts.height or opts.maxHeight
+         args:
+            type: \confirm
+            message: message
+            opts: opts
+         parentTask: @
+      result = await os.waitClosedTask pid
+      unless opts.cancelable
+         result = Boolean result
+      result
+
+   prompt: (message, opts) ->
+      opts = @castNewObj opts, \defaultValue
+      pid = os.runTask \Popup,
+         width: opts.width
+         height: opts.height
+         maxHeight: opts.height or opts.maxHeight
+         args:
+            type: \prompt
+            message: message
+            opts: opts
+         parentTask: @
+      os.waitClosedTask pid
+
+   pickOpenWithVappByEnt: (ent) ->
+      pid = os.runTask \OpenWith,
+         args:
+            ent: ent
+         parentTask: @
+      os.waitClosedTask pid
+
    close: (val) !->
-      if @closedResolve
-         for , resolver of @resolvers
-            resolver.resolve!
-         if @listenedResolve
-            @listenedResolve no
-            @listenedResolve = void
-         @closedResolve val
-         @closedResolve = void
-         @listened = no
-         index = os.tasks.indexOf @
-         os.tasks.splice index, 1
-         os.updateFocusedTask!
+      if !@closed and !@isAskingClose
+         @isAskingClose = yes
+         m.redraw!
+         isClose = await @eventEmit \$$close
+         @isAskingClose = no
+         unless isClose == no
+            @listened = no
+            @postMessage = void
+            @closed = yes
+            for , resolver of @resolvers
+               resolver.resolve!
+            if @listenedResolve
+               @listenedResolve no
+               @listenedResolve = void
+            @closedResolve val
+            @closedResolve = void
+            index = os.tasks.indexOf @
+            os.tasks.splice index, 1
+            os.updateFocusedTask!
          m.redraw!
 
    updateMinSize: !->
@@ -492,19 +663,56 @@ class Task extends Both
       @x = Math.floor @clamp @x, 0 os.desktopWidth - @width
       @y = Math.floor @clamp @y, 0 os.desktopHeight - @height
 
-   updateNoHeader: !->
-      @noHeader = @noHeader$ or @fullscreen
-      m.redraw!
-
    updateSizeDom: !->
-      @dom.style <<< m.style do
+      @dom?style <<< m.style do
          width: @width
          height: @height
 
    updateXYDom: !->
-      @dom.style <<< m.style do
+      @dom?style <<< m.style do
          left: @x
          top: @y
+
+   updateMinimizeDom: (isFirst) !->
+      el = document.querySelector ".OS-taskbarTask--#@pid"
+      {x, y, width, height} = el.getBoundingClientRect!
+      x += Math.floor (width - 200) / 2
+      width = 200
+      if os.taskbarPosition == \top
+         y -= os.taskbarHeight
+      if @minimized
+         keyframe =
+            left: x
+            top: y
+            width: width
+            height: height
+            borderRadius: 6
+      else
+         if @maximized
+            keyframe =
+               left: 0
+               top: 0
+               width: \100%
+               height: \100%
+               borderRadius: 0
+         else
+            keyframe =
+               left: @x
+               top: @y
+               width: @width
+               height: @height
+               borderRadius: 6
+      anim = @dom.animate do
+         *  m.style keyframe
+         *  duration: 500
+            easing: "cubic-bezier(.22, 1, .36, 1)"
+            fill: \forwards if @minimized
+      @dom.hidden = isFirst
+      if @minimized
+         @minimizeAnim = anim
+      else
+         @minimizeAnim?reverse!
+         @minimizeAnim = void
 
    sendTF: (name, ...args) ->
       if @postMessage
@@ -543,8 +751,16 @@ class Task extends Both
       @tid = @randomUuid!
       @postMessage = @frameEl.contentWindow~postMessage
       tid: @tid
+      useContentSize: @useContentSize
       autoListen: @autoListen
       args: @args
+
+   loadedFrme: !->
+      if @hidden
+         @loaded = 0
+      else
+         @loaded = yes
+      m.redraw!
 
    mousedownFrme: (eventData) !->
       @focus!
@@ -586,7 +802,7 @@ class Task extends Both
                items: items
                onSubmenuItemClick: (item) !~>
                   close item
-      popper = os.createPopper targetEl, popperEl, popperOpts
+      popper = @createPopper targetEl, popperEl, popperOpts
       close = (item) !~>
          if popper
             m.mount popperEl
@@ -616,6 +832,7 @@ class Task extends Both
          os.submenuMenuClose = void
 
    showContextMenu: (x, y, items, isAddFrameXY) ->
+      @closeContextMenu!
       rect = @makeRectFromXY x, y
       [close, promise] = @showMenu rect, items, isAddFrameXY, \OS-contextMenu,
          placement: \bottom-start
@@ -640,6 +857,40 @@ class Task extends Both
          os.menubarMenuClose!
          os.menubarMenuClose = void
 
+   showTooltip: (rect, text, isAddFrameXY) !->
+      @closeTooltip!
+      @tooltipTimerId = setTimeout !~>
+         vals = @formatTooltip text
+         text := vals.0
+         placements = vals.1
+         if isAddFrameXY
+            @addRectXYByFrameEl rect
+         targetEl =
+            getBoundingClientRect: ~>
+               rect
+         popperEl = document.createElement \div
+         popperEl.className = "OS-tooltip"
+         portalEl = os.dom
+         portalEl.appendChild popperEl
+         m.render popperEl, text
+         popper = @createPopper targetEl, popperEl,
+            placement: placements.0
+            offset: [0 3]
+            flips: placements.slice 1
+         os.tooltipClose = !~>
+            if popper
+               m.render popperEl
+               popperEl.remove!
+               popper.destroy!
+               popper := void
+      , 200
+
+   closeTooltip: !->
+      clearTimeout @tooltipTimerId
+      if os.tooltipClose
+         os.tooltipClose!
+         os.tooltipClose = void
+
    onpointerdownTitle: (event) !->
       if event.buttons == 1
          event.target.setPointerCapture event.pointerId
@@ -658,7 +909,7 @@ class Task extends Both
          @updateXYDom!
 
    onlostpointercaptureTitle: (event) !->
-      if event.y < 0
+      if event.y <= 0
          @maximize yes
       @moving = no
       @updateXY!
@@ -737,18 +988,28 @@ class Task extends Both
    onlostpointercaptureResize: (event) !->
       @resizeData = void
 
+   onbeforeremove: ->
+      anim = @dom.animate do
+         *  scale: 0.9
+            opacity: 0
+         *  duration: 500
+            easing: "cubic-bezier(.22, 1, .36, 1)"
+      anim.finished
+
    view: (vnode, vdom) ->
       m \.Task,
          class: m.class do
+            "Task--shown": !@hidden
             "Task--minimized": @minimized
             "Task--maximized": @maximized
+            "Task--unmaximized": @isUnmaximized
             "Task--fullscreen": @fullscreen
-            "Task--noHeader": @noHeader
+            "Task--noHeader": @getNoHeader!
          style: m.style do
             zIndex: @z
-         inert: @minimized
+         inert: @closed or @minimized
          m \.Task-header,
-            inert: @noHeader
+            inert: @getNoHeader!
             m \.Task-title,
                onpointerdown: @onpointerdownTitle
                onpointermove: @onpointermoveTitle
@@ -781,6 +1042,7 @@ class Task extends Both
             if vdom
                m \.Task-frame,
                   vdom
+         m \style.Task-styl
          if !@maximized and !@fullscreen
             m \.Task-resizes,
                @@resizeSides.map (side) ~>

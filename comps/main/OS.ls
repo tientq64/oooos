@@ -10,8 +10,6 @@ class OS extends Task
       @tasks = []
       @task = void
 
-      @exts = []
-
       @taskbarPosition = \bottom
       @taskbarHeight = 39
 
@@ -24,6 +22,12 @@ class OS extends Task
 
       @time = dayjs!
 
+      @battery = void
+      @batteryLevel = void
+      @batteryCharging = void
+      @batteryChargingTime = void
+      @batteryDischargingTime = void
+
       super app, env
 
       @isTask = no
@@ -31,18 +35,21 @@ class OS extends Task
       @submenuMenuClose = void
       @contextMenuClose = void
       @menubarMenuClose = void
+      @tooltipClose = void
+      @tooltipTimerId = void
 
    oncreate: (vnode) !->
       super vnode
 
       await @initTime!
+      await @initBattery!
       await @initFiles!
       await @initEvents!
       await @initTasks!
 
       m.redraw!
 
-      await @runTask \Test
+      @runTask \Test
 
    updateDesktopSize: !->
       @desktopWidth = innerWidth
@@ -61,6 +68,18 @@ class OS extends Task
       , (500 - @time.millisecond!) %% 1000
       m.redraw!
 
+   initBattery: !->
+      @battery = await navigator.getBattery!
+      @battery.onlevelchange = @onlevelchangeBattery
+      @battery.onchargingchange = @onchargingchangeBattery
+      @battery.onchargingtimechange = @onchargingtimechangeBattery
+      @battery.ondischargingtimechange = @ondischargingtimechangeBattery
+      @onlevelchangeBattery!
+      @onchargingchangeBattery!
+      @onchargingtimechangeBattery!
+      @ondischargingtimechangeBattery!
+      m.redraw!
+
    initFiles: !->
       await fs.init do
          bytes: 1024 * 1024 * 512
@@ -76,6 +95,7 @@ class OS extends Task
 
    initEvents: !->
       window.addEventListener \resize @onresizeGlobal
+      window.addEventListener \mouseover @onmouseoverGlobal
       window.addEventListener \mousedown @onmousedownGlobal
       window.addEventListener \message @onmessageGlobal
       m.redraw!
@@ -91,6 +111,7 @@ class OS extends Task
             isDesktop: yes
             viewType: \desktop
       @desktopTask = @tasks.find (.pid == pid)
+      await @waitListenedTask pid
       m.redraw!
 
    updateFocusedTask: !->
@@ -107,13 +128,28 @@ class OS extends Task
          .filter (app) ~>
             app.pinnedTaskbar and !app.skipTaskbar
          .map (app) ~>
-            task = os.tasks.find (task2) ~>
-               task2.app == app and !task2.skipTaskbar
+            task = os.tasks.find (.app == app)
             task or app
       tasks = os.tasks
          .filter (task) ~>
-            !task.skipTaskbar and !pinnedApps.includes task
+            !pinnedApps.includes task
       [...pinnedApps, ...tasks]
+
+   onlevelchangeBattery: !->
+      @batteryLevel = Number @battery.level.toFixed 2
+      m.redraw!
+
+   onchargingchangeBattery: !->
+      @batteryCharging = @battery.charging
+      m.redraw!
+
+   onchargingtimechangeBattery: !->
+      @batteryChargingTime = @battery.chargingTime
+      m.redraw!
+
+   ondischargingtimechangeBattery: !->
+      @batteryDischargingTime = @battery.dischargingTime
+      m.redraw!
 
    oncontextmenuTaskbar: (event) !->
       if event.target == event.currentTarget
@@ -162,6 +198,15 @@ class OS extends Task
          task.updateXYDom!
       m.redraw!
 
+   onmouseoverGlobal: (event) !->
+      if event.isTrusted
+         if el = event.target.closest "[tooltip]"
+            rect = @getRect el
+            text = el.getAttribute \tooltip
+            @showTooltip rect, text, no
+         else
+            @closeTooltip!
+
    onmousedownGlobal: (event) !->
       if event.isTrusted
          eventData = event{screenX, screenY, buttons}
@@ -169,6 +214,7 @@ class OS extends Task
          eventData.clientY = -1
          for task in @tasks
             task.sendTF \mousedownMain eventData
+         @closeTooltip!
 
    onmessageGlobal: (event) !->
       if data = event.data
@@ -179,7 +225,7 @@ class OS extends Task
             if task = @tasks.find (.tid == tid)
                method = task[name]
                [result, isErr] = await @safeAsyncApply method, args
-               task.postMessage do
+               task.postMessage? do
                   type: \ftf
                   mid: mid
                   result: result
@@ -199,6 +245,7 @@ class OS extends Task
          m \.OS.Portal,
             class: m.class do
                "OS--taskbar-#@taskbarPosition"
+               "OS--fullscreen": os.task?fullscreen
             onmousedown: @onmousedownOS
             m \.OS-body,
                m \.OS-tasks,
@@ -222,28 +269,34 @@ class OS extends Task
                   m \.OS-taskbarTasks,
                      @getTaskbarPinnedAppsAndTasks!map (item) ~>
                         if item instanceof Task
-                           m Popover,
-                              key: item.pid
-                              interactionKind: \contextmenu
-                              content: ~>
-                                 m Menu,
-                                    style:
-                                       width: 200
+                           if item.skipTaskbar
+                              m \.OS-taskbarTask.OS-taskbarTask--skip,
+                                 class: "OS-taskbarTask--#{item.pid}"
+                                 key: item.pid
+                           else
+                              m Popover,
+                                 key: item.pid
+                                 interactionKind: \contextmenu
+                                 content: (close) ~>
+                                    m Menu,
+                                       style:
+                                          width: 200
+                                       basic: yes
+                                       items:
+                                          *  header: item.name
+                                          *  text: "Đóng"
+                                             icon: \xmark
+                                             color: \red
+                                             click: !~>
+                                                close!
+                                                item.close!
+                                 m Button,
+                                    class: "OS-taskbarTask OS-taskbarTask--#{item.pid} OS-stopMouseDown"
+                                    active: @task == item
                                     basic: yes
-                                    items:
-                                       *  header: item.name
-                                       *  text: "Đóng"
-                                          icon: \xmark
-                                          color: \red
-                                          click: !~>
-                                             item.close!
-                              m Button,
-                                 class: "OS-taskbarTask OS-stopMouseDown"
-                                 active: @task == item
-                                 basic: yes
-                                 icon: item.icon
-                                 onclick: @onclickTaskbarTask.bind void item
-                                 item.title
+                                    icon: item.icon
+                                    onclick: @onclickTaskbarTask.bind void item
+                                    item.title
                         else
                            m Popover,
                               key: item.path
@@ -268,20 +321,26 @@ class OS extends Task
                                  class: "OS-taskbarPinnedApp OS-stopMouseDown"
                                  basic: yes
                                  icon: item.icon
+                                 tooltip: "#{item.name}|top"
                                  onclick: @onclickTaskbarPinnedApp.bind void item
                   m \.OS-taskbarTrays,
                      m Button,
                         basic: yes
                         icon: \wifi
+                        tooltip: "Mạng|top"
                      m Button,
                         basic: yes
                         icon: \volume
+                        tooltip: "Âm thanh|top"
+                     if @battery
+                        m Button,
+                           basic: yes
+                           icon: @getBatteryIcon!
+                           tooltip: "Pin: #{@batteryLevel * 100}%, #{@batteryCharging and \đang or \không} sạc|top"
                      m Button,
                         basic: yes
-                        icon: \battery
-                     m Button,
-                        basic: yes
-                        @time.format "HH:mm DD/MM/YYYY"
+                        tooltip: @upperFirst @time.format "dddd, DD MMMM, YYYY|top"
+                        @time.format "HH:mm, DD/MM/YYYY"
                      m Button,
                         basic: yes
                         icon: \message

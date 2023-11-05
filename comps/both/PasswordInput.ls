@@ -42,4 +42,5 @@ PasswordInput = m.comp do
                oncontextmenu: @oncontextmenuTextInput
          m Button,
             icon: @isHidePassword and \eye or \eye-slash
+            tooltip: "#{@isHidePassword and \Hiện or \Ẩn} mật khẩu|right,top,bottom"
             onclick: @onclickIsHidePassword

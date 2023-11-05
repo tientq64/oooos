@@ -1,0 +1,8 @@
+name: Popup
+icon: fad:circle-info
+type: core
+admin: yes
+isModal: yes
+width: 440
+maxHeight: 400
+useContentSize: yes

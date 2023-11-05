@@ -8,14 +8,14 @@ Menu = m.comp do
       @isSubmenu = @attrs.isSubmenu
       @root = @attrs.root or @
       if @isSubmenu
-         items = @attrs.items
+         {items} = @attrs
       else
          [items, clicks, groups] = os.formatMenuItems @attrs.items
+         @clicks = clicks
       @items = items or []
-      @clicks = clicks
 
    getIsActivedItem: (item) ->
-      @item and @item.id == item.id
+      (@item and @item.id == item.id) or (item.value != void and item.value == @attrs.value)
 
    setItem: (item) !->
       @item = item
@@ -86,11 +86,14 @@ Menu = m.comp do
    view: ->
       m \.Menu,
          class: m.class do
+            "Menu--fill": @attrs.fill
             "Menu--basic": @attrs.basic
+            "Menu--compact": @attrs.compact
             @attrs.class
          style: m.style do
             @attrs.style
          @items.map (item) ~>
+            isActive = @getIsActivedItem item
             if item.divider
                m \.Menu-divider,
                   key: item.id
@@ -102,8 +105,10 @@ Menu = m.comp do
                m \.Menu-item,
                   key: item.id
                   class: m.class do
-                     "active": @getIsActivedItem item
-                     "Menu--#that" if item.color
+                     "active": isActive
+                     "disabled": item.disabled
+                     @attrs.activeItemClass if isActive
+                     "Menu-item--#that" if item.color
                   onmouseenter: @onmouseenterMenuItem.bind void item
                   onmouseleave: @onmouseleaveMenuItem.bind void item
                   onclick: @onclickMenuItem.bind void item

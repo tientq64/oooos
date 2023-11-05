@@ -7,7 +7,7 @@ Menubar = m.comp do
 
    onclickMenu: (menu, event) !->
       @menu = void
-      [items, clicks, groups] = os.formatMenuItems menu.items
+      [items, clicks, groups] = os.formatMenuItems menu.subitems
       if items
          @menu = menu
          m.redraw!

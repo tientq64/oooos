@@ -22,6 +22,18 @@ class Both
       val = String val
       val.charAt 0 .toUpperCase! + val.substring 1
 
+   indent: (text, amount, skipFirstLine) ->
+      space = "   "repeat amount
+      text.replace /^(?=.)/gm ~>
+         if skipFirstLine
+            skipFirstLine := no
+            ""
+         else space
+
+   escapeHtml: (html) ->
+      html.replace /[&<>"']/g (chr) ~>
+         "&##{chr.charCodeAt 0};"
+
    clamp: (num, min, max) ->
       if &length == 2
          [max, min] = [min 0]
@@ -48,9 +60,25 @@ class Both
       else []
 
    castNewArr: (arr) ->
-      if Array.isArray arr => [...arr]
-      else if arr? => [arr]
-      else []
+      arr = @castArr arr
+      Array.from arr
+
+   uniqueArr: (arr) ->
+      set = new Set arr
+      arr.splice 0 Infinity, ...set
+      arr
+
+   uniqueNewArr: (arr) ->
+      Array.from new Set arr
+
+   castObj: (obj, key) ->
+      if typeof! obj == \Object => obj
+      else if obj? and key != void => (key): obj
+      else {}
+
+   castNewObj: (obj, key) ->
+      obj = @castObj obj, key
+      {...obj}
 
    safeSyncApply: (fn, args) ->
       try
@@ -139,13 +167,13 @@ class Both
 
    extPath: (path) ->
       name = @namePath path
-      name.split \. .slice 1 .at 0
+      name.split \. .slice 1 .at -1 or ""
 
    castPath: (ent) ->
       ent.path or ent
 
    formatIconName: (name) ->
-      if name?
+      if name? and name != ""
          [, kind, val, color] = /^(?:(\w+):)?(.+?)(?:!([\da-fA-F]{3,8}))?$/.exec name
          if /^\d{2,}$/.test val
             kind ?= \flaticon
@@ -178,38 +206,43 @@ class Both
             else item
       for item, i in items
          newItem = void
-         id = item.id ? "#parentId:#i"
-         if item.divider
-            newItem = item
-            if prevItem
-               if prevItem.divider or prevItem.isHeader
-                  newItems.pop!
-         else if item.beginGroup
-            openingGroups.add that
-         else if item.endGroup
-            openingGroups.delete that
-         else if \header of item
-            newItem =
-               header: item.header
-               isHeader: yes
-            if prevItem
-               if prevItem.divider or prevItem.isHeader
-                  newItems.pop!
-         else if typeof! item == \Object
-            newItem =
-               text: String that if item.text?
-               icon: item.icon
-               label: String that if item.label?
-               color: item.color
-               disabled: item.disabled
-               isItem: yes
-            if item.subitems
-               [subitems, subclicks] = @formatMenuItems item.subitems, id
-               if subitems
-                  newItem.subitems = subitems
-                  clicks <<< subclicks
-            else if item.click
-               clicks[id] = item.click
+         if typeof! item == \Object
+            id = item.id ? "#parentId:#i"
+            if item.divider
+               newItem = item
+               if prevItem
+                  if prevItem.divider or prevItem.isHeader
+                     newItems.pop!
+            else if item.beginGroup
+               openingGroups.add that
+            else if item.endGroup
+               openingGroups.delete that
+            else if \header of item
+               newItem =
+                  header: item.header
+                  isHeader: yes
+               if prevItem
+                  if prevItem.divider or prevItem.isHeader
+                     newItems.pop!
+            else
+               newItem =
+                  text: String that if item.text?
+                  icon: item.icon
+                  label: String that if item.label?
+                  color: item.color
+                  disabled: Boolean item.disabled
+                  active: Boolean item.active
+                  value: item.value
+                  isItem: yes
+               if \enabled of item and !newItem.disabled
+                  newItem.disabled = !item.enabled
+               if item.subitems
+                  [subitems, subclicks] = @formatMenuItems item.subitems, id
+                  if subitems
+                     newItem.subitems = subitems
+                     clicks <<< subclicks
+               else if item.click
+                  clicks[id] = item.click
          if newItem
             newItem.id = id
             if item.group
@@ -236,9 +269,28 @@ class Both
             id: "menus:#i"
             text: menu.text
             icon: menu.icon
-            items: menu.items
+            subitems: menu.subitems
          newMenus.push newMenu
       newMenus
+
+   formatTooltip: (text) ->
+      text = String text ? ""
+      index = text.lastIndexOf \|
+      if index == -1
+         placements = [\auto]
+      else
+         placements = text.substring index + 1 .split \,
+         if placements.length and
+            placements.every (in ["" \left \top \right \bottom \auto]) and
+            placements.length == @uniqueNewArr placements .length
+         then
+            placements .= map (or \auto)
+            unless placements.includes \auto
+               placements.push \auto
+            text .= substring 0 index
+         else
+            placements = [\auto]
+      [text, placements]
 
    createHist: (items, max) ->
       items = @castNewArr items
@@ -324,8 +376,6 @@ class Both
          @contextMenuResolves.push resolve
 
    import: (...libs) !->
-      listJs = []
-      listCss = []
       await Promise.all libs.map (lib, i) ~>
          promise = os.importedLibs[lib]
          unless promise
@@ -333,7 +383,7 @@ class Both
                [, kind, name, ext] = lib.match /^(?:(npm|git|sky):)?(.+?)(?:!(js|css))?$/
                kind or= \npm
                ext or= name.endsWith \.css and \css or \js
-               loadType = \fetch
+               loadType = \tag
                switch kind
                | \npm
                   url = "https://cdn.jsdelivr.net/npm/#name"
@@ -343,31 +393,44 @@ class Both
                   url = "https://cdn.skypack.dev/#name?min"
                   loadType = \import
                switch loadType
-               | \fetch
-                  text = await m.fetch url
+               | \tag
+                  if ext == \js
+                     el = document.createElement \script
+                     el.onload = resolve
+                     el.src = url
+                     document.body.appendChild el
+                  else
+                     el = document.createElement \link
+                     el.rel = \stylesheet
+                     el.onload = resolve
+                     el.href = url
+                     stylLibEl.after el
                | \import
                   modl = await import url
-               if text
-                  if ext == \css
-                     listCss[i] = text
-                  else
-                     listJs[i] = text
-               else if modl
                   varName = name
                      .replace /^[^a-z\d]+|(?<=.)@[\d.]+$/g ""
                      .replace /[^a-z\d]+([a-z])/g (.at -1 .toUpperCase!)
-                  listJs[i] = [varName, modl]
-               resolve!
+                  window[varName] = modl
+                  resolve!
          promise
-      if listJs.length
-         for js in listJs
-            if Array.isArray js
-               window[js.0] = js.1
+
+   wait: (ms) ->
+      new Promise (resolve) !~>
+         setTimeout resolve, ms
+
+   waitVar: (varName) ->
+      new Promise (resolve) !~>
+         check = (count) !~>
+            if count
+               if window[varName]?
+                  resolve yes
+               else
+                  setTimeout !~>
+                     check count - 1
+                  , 100
             else
-               window.eval js
-      if listCss.length
-         css = listCss.join \\n .concat \\n
-         stylLibsEl.textContent += css
+               resolve no
+         check 100
 
    addResolver: ->
       mid = @randomUuid!

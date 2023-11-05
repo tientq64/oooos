@@ -54,6 +54,7 @@ TextInput = m.comp do
             @attrs.class
          style: m.style do
             @attrs.style
+         tooltip: @attrs.tooltip
          if @attrs.icon
             m Icon,
                class: "TextInput-icon TextInput-leftIcon"

@@ -1,0 +1,9 @@
+name: OpenWith
+icon: fad:arrow-up-right-from-square
+type: core
+admin: yes
+isModal: yes
+width: 420
+height: 600
+minWidth: 420
+useContentSize: yes

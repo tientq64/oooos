@@ -10,11 +10,13 @@ App = m.comp do
       @input = ""
       @lines = []
 
-   oncreate: !->
-      @execInput "path"
+      @help.toString = @help
 
-   execInput: (input) !->
-      input .= trim!
+   oncreate: !->
+      @exec "path"
+
+   exec: (input) !->
+      input = String input .trim!
       if input
          line =
             id: os.randomUuid!
@@ -45,13 +47,14 @@ App = m.comp do
          @scrollToBottom!
          m.redraw!
 
-   cd: (path = "") ->
-      path = os.joinPath @path, path
-      dir = await os.getEnt path
-      if dir.isDir
-         @path = dir.path
-      else
-         throw Error "Không phải thư mục"
+   cd: (path) ->
+      if path
+         path = os.joinPath @path, path
+         dir = await os.getEnt path
+         if dir.isDir
+            @path = dir.path
+         else
+            throw Error "Không phải thư mục"
       @path
 
    ls: (path) ->
@@ -80,13 +83,27 @@ App = m.comp do
    exit: (val) ->
       os.close val
 
+   help: (funcName) ->
+      """
+         cd path?
+            Thay đổi thư mục hiện tại.
+         ls path?
+            Hiển thị danh sách các mục trong thư mục.
+         exec input
+            Thực thi câu lệnh.
+         help funcName?
+            Hiển thị tài liệu hướng dẫn.
+         exit val?
+            Thoát ứng dụng.
+      """
+
    scrollToBottom: !->
       requestAnimationFrame !~>
          @linesVnode.dom.scrollTop = @linesVnode.dom.scrollHeight
 
    onsubmitInputForm: (event) !->
       event.preventDefault!
-      @execInput @input
+      @exec @input
 
    onchangeInput: (event) !->
       @input = event.target.value

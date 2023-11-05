@@ -2,12 +2,14 @@
    "/comps/both/*": [
       "/comps/both/Both.ls",
       "/comps/both/Button.ls",
+      "/comps/both/Checkbox.ls",
       "/comps/both/Icon.ls",
       "/comps/both/InputGroup.ls",
       "/comps/both/Menu.ls",
       "/comps/both/Menubar.ls",
       "/comps/both/PasswordInput.ls",
       "/comps/both/Popover.ls",
+      "/comps/both/Radio.ls",
       "/comps/both/Table.ls",
       "/comps/both/Textarea.ls",
       "/comps/both/TextInput.ls"
@@ -19,7 +21,11 @@
       "/comps/frme/Frme.ls"
    ],
    "/C/apps/*": [
+      "/C/apps/CodeEditor",
       "/C/apps/FileManager",
+      "/C/apps/ImageViewer",
+      "/C/apps/OpenWith",
+      "/C/apps/Popup",
       "/C/apps/Terminal",
       "/C/apps/Test",
       "/C/apps/TextArea"

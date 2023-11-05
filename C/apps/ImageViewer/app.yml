@@ -1,0 +1,6 @@
+name: ImageViewer
+icon: fad:image
+admin: yes
+width: 1200
+height: 800
+supportedExts: [jpg, jpeg, png, webp, gif]

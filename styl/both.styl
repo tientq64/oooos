@@ -2,15 +2,11 @@
 
 :root
    --bg-opacity: 1
+   --default-border-color: $gray2
 
 *, :before, :after
    box-sizing: border-box
    vertical-align: middle
-
-.dark
-   background-color: $gray0
-   color: #fff
-   color-scheme: dark
 
 html
    height: 100%
@@ -28,11 +24,16 @@ body
    user-select: none
    cursor: default
 
+.dark
+   background-color: $gray0
+   color: #fff
+   color-scheme: dark
+
 img, a
    user-drag: none
 
 p
-   margin: 0 8px
+   margin: 8px 0
 
 for val, i in $fontSizes
    h{i + 1}
@@ -40,6 +41,11 @@ for val, i in $fontSizes
 
 small
    font-size: $fontSizes[5]
+
+ul
+   margin: 8px 0
+   padding-left: 32px
+   list-style-type: square
 
 .Icon
    min-width: 20px
@@ -69,6 +75,9 @@ small
    font: inherit
    color: $gray0
 
+.Button--fill
+   width: 100%
+
 .Button--bordered
    border: 1px solid $gray2
    background: #fff
@@ -83,7 +92,6 @@ small
          background: $gray1
 
    +dark()
-      border-color: $gray2
       background: $gray0
       color: #fff
 
@@ -94,12 +102,22 @@ small
    &.active
       background: $gray3
 
+   +dark()
+      color: #fff
+
+      &:hover
+      &.active
+         background: $gray1
+
 for k, val in $nonGrayColors
    .Button--{k}
       &.Button--bordered
          border-color: val[0]
          background: val[2]
          color: #fff
+
+         +dark()
+            border-color: val[4]
 
          &:hover
          &.active
@@ -204,9 +222,51 @@ for k, val in $nonGrayColors
 .Textarea--fill
    width: 100%
 
-.InputGroup
+.Radio
+.Checkbox
+   min-height: 20px
    display: inline-flex
    align-items: center
+   gap: 12px
+
+.Radio:has(> .Radio-input:checked) > .Radio-check
+.Checkbox:has(> .Checkbox-input:checked) > .Checkbox-check
+      border-color: $blue0
+      background: $blue2
+      color: #fff
+
+      +dark()
+         border-color: $blue4
+
+      &:after
+         content: attr(data-icon)
+         font-family: "Font Awesome 6 Pro"
+         font-weight: 900
+         pointer-events: none
+
+.Radio-check
+.Checkbox-check
+   width: 20px
+   height: 20px
+   border: 1px solid $gray2
+   border-radius: 6px
+   display: flex
+   justify-content: center
+   align-items: center
+   background: #fff
+
+   +dark()
+      background: $gray0
+
+.Radio-check
+   border-radius: 999px
+
+.Radio-input
+.Checkbox-input
+   display: none
+
+.InputGroup
+   display: inline-flex
 
    > * + *
       margin-left: -1px
@@ -253,9 +313,19 @@ for k, val in $nonGrayColors
    border-radius: 6px
    background: #fff
 
+   +dark()
+      background: $gray0
+
+.Menu--fill
+   width: 100%
+   max-width: 100%
+
 .Menu--basic
    border: 0
    background: #0000
+
+.Menu--compact
+   padding: 0
 
 .Menu-item
    min-height: 30px
@@ -268,13 +338,20 @@ for k, val in $nonGrayColors
    &.active
       background: $gray3
 
+      +dark()
+         background: $gray1
+
 for k, val in $nonGrayColors
-   .Menu--{k}
+   .Menu-item--{k}
       color: val[2]
 
       &:hover
+      &.active
          background: val[2]
          color: #fff
+
+         +dark()
+            background: val[2]
 
       > .Menu-label
          color: inherit
@@ -293,6 +370,9 @@ for k, val in $nonGrayColors
    font-size: 14px
    color: $gray1
    pointer-events: none
+
+   +dark()
+      color: $gray3
 
 .Menu-header
    min-height: 34px
@@ -330,6 +410,9 @@ for k, val in $nonGrayColors
       box-shadow: inset 0 -1px $gray2
       z-index: 1
 
+      +dark()
+         background: $gray0
+
    td, th
       height: 30px
       padding: 4px 8px
@@ -346,6 +429,9 @@ for k, val in $nonGrayColors
          &:nth-child(even)
             background: $gray4
 
+            +dark()
+               background: $gray1
+
 .Table--fixed
    table
       table-layout: fixed
@@ -359,6 +445,9 @@ for k, val in $nonGrayColors
       tr
          &:hover
             background: $gray3
+
+            +dark()
+               background: $gray2
 
 .Table-table
    width: 100%
@@ -458,11 +547,14 @@ for k, val in $nonGrayColors
                   {prop}{side}: auto
 
    .border
-      border: 1px solid $gray2
+      border: 1px solid var(--default-border-color)
 
-   for val in 2 3 4
-      .border-{val}
-         border-width: (val)px
+   for s, side in $sides2
+      .border{s}
+         border{side}: 1px solid var(--default-border-color)
+      for val in 2 3 4
+         .border{s}-{val}
+            border{side}-width: (val)px
 
    for val in solid dashed dotted
       .border-{val}

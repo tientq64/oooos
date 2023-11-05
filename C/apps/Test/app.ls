@@ -1,9 +1,11 @@
 App = m.comp do
    oninit: !->
+      @isDarkMode = no
       @text = "Nidoqueen"
       @bool = yes
       @boolTestPatchDom = no
       @popoverIsOpen = yes
+      @longText = "The quick brown fox jumps over the lazy dog (tạm dịch: Con cáo nâu nhanh nhẹn nhảy qua con chó lười biếng) là một pangram của tiếng Anh."
 
       @menu =
          void
@@ -59,7 +61,7 @@ App = m.comp do
                   icon: \dice
                   click: !~>
                      @text = Math.random!
-               *  text: "The quick brown fox jumps over the lazy dog (tạm dịch: Con cáo nâu nhanh nhẹn nhảy qua con chó lười biếng) là một pangram của tiếng Anh."
+               *  text: @longText
                   icon: \paragraph
                   label: "P"
                   click: (item) !~>
@@ -160,8 +162,14 @@ App = m.comp do
 
    view: ->
       m \.row.wrap.middle.gap-3.h-100.p-3.ov-auto,
+         class: m.class do
+            "dark": @isDarkMode
          onscroll: os.fixBlurryScroll
 
+         m Button,
+            onclick: !~>
+               != @isDarkMode
+            "Light/dark mode"
          m Button,
             onclick: !~>
                != @boolTestPatchDom
@@ -175,9 +183,62 @@ App = m.comp do
             "Sau 2s"
          if @boolTestPatchDom
             m \p,
-               "Đoạn văn này xuất hiện chỉ với mục đích để test bản vá DOM."
+               "Đoạn này xuất hiện với mục đích test bản vá DOM."
+         m \span,
+            "@bool: #@bool"
 
-         m \.col-12 "Popover:"
+         m \h3.col-12 "Radio:"
+         m Radio
+         m Radio,
+            checked: @bool
+            onchange: (event) !~>
+               @bool = event.target.checked
+            "Radio"
+
+         m \h3.col-12 "Checkbox:"
+         m Checkbox
+         m Checkbox,
+            checked: @bool
+            onchange: (event) !~>
+               @bool = event.target.checked
+            "Checkbox"
+
+         m \h3.col-12 "Tooltip:"
+         m Button,
+            tooltip: "Chào ông cháu 🤭"
+            "Hover me"
+         m \span,
+            tooltip: "Tooltip của <span>"
+            "Span"
+         m Button,
+            tooltip: "Tooltip này nên hiển thị ở bên trái nếu có thể|left"
+            "Với vị trí"
+         m Button,
+            tooltip: "Tooltip này nên hiển thị ở các vị trí trái, trên, dưới, theo thứ tự nếu có thể|left,top,bottom"
+            "Nhiều vị trí"
+         m Button,
+            tooltip: "Không hợp lệ nên hiển thị|riGht"
+            "Vị trí không hợp lệ"
+         m \span,
+            tooltip: "Tooltip|top|"
+            "Thêm dấu | ở cuối để đảm bảo tooltip hiển thị đúng"
+         m Button,
+            tooltip: ""
+            "Trống"
+         m Button,
+            tooltip: "   "
+            "Blank"
+         m Button,
+            tooltip: @longText
+            "Dài"
+         m \.col-12
+         m Button,
+            width: 80
+            height: 80
+            tooltip: "Quá to"
+            "To"
+
+         m \h3.col-12 "Popover:"
          m Popover,
             content: ~>
                "Đây là Popover content."
@@ -214,7 +275,7 @@ App = m.comp do
             m Button,
                "Controlled"
 
-         m \.col-12 "Table:"
+         m \h3.col-12 "Table:"
          m Table,
             striped: yes
             m \tbody,
@@ -256,11 +317,11 @@ App = m.comp do
                      m \td pokemon.types.join " / "
                      m \td.text-wrap pokemon.dex
 
-         m \.col-12 "PasswordInput:"
+         m \h3.col-12 "PasswordInput:"
          m PasswordInput,
             value: @text
 
-         m \.col-12 "InputGroup:"
+         m \h3.col-12 "InputGroup:"
          m InputGroup,
             m Button,
                "A"
@@ -292,7 +353,7 @@ App = m.comp do
                color: \yellow
                "D"
 
-         m \.col-12 "Menu:"
+         m \h3.col-12 "Menu:"
          m Menu
          m Menu,
             items: @menu
@@ -300,7 +361,7 @@ App = m.comp do
             basic: yes
             items: @menu
 
-         m \.col-12 "Icon:"
+         m \h3.col-12 "Icon:"
          m Icon,
             name: \swap
          m Icon,
@@ -309,10 +370,11 @@ App = m.comp do
             name: \fad:films
          m Icon,
             name: 1357643
+         m Icon
          m Icon,
             name: \https://www.serebii.net/dungeon2/headshot/386.png
 
-         m \.col-12 "Button:"
+         m \h3.col-12 "Button:"
          [void \red \yellow \green \blue]map ~>
             m Button,
                color: it
@@ -337,7 +399,7 @@ App = m.comp do
             width: 200
             "Width: 200"
 
-         m \.col-12 "TextInput:"
+         m \h3.col-12 "TextInput:"
          m TextInput
          m TextInput,
             icon: \quote-left
@@ -353,8 +415,8 @@ App = m.comp do
             onchange: (event) !~>
                @text = event.target.value
 
-         m \.col-12 "Image:"
+         m \h3.col-12 "Image:"
+         m \img,
+            src: \https://i.ibb.co/gSDp1bR/i14745531949.jpg
          m \img.thumbnail,
             src: \https://www.serebii.net/dungeon2/headshot/448.png
-         m \img.thumbnail,
-            src: \https://i.ibb.co/gSDp1bR/i14745531949.jpg

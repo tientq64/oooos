@@ -7,6 +7,7 @@ Button = m.comp do
          class: m.class do
             "active": @attrs.active
             "disabled": @attrs.disabled
+            "Button--fill": @attrs.fill
             "Button--basic": @attrs.basic
             "Button--bordered": !@attrs.basic
             "Button--small": @attrs.small
@@ -14,9 +15,12 @@ Button = m.comp do
             @attrs.class
          style: m.style do
             width: @attrs.width
+            height: @attrs.height
+            minHeight: @attrs.height
             @attrs.style
          type: @attrs.type
          disabled: @attrs.disabled
+         tooltip: @attrs.tooltip
          onclick: @attrs.onclick
          oncontextmenu: @attrs.oncontextmenu
          if @attrs.icon

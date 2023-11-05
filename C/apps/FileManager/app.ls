@@ -23,6 +23,7 @@ App = m.comp do
       if @isDesktop
          os.requestTaskPerm \taskbarView
          os.requestTaskPerm \desktopBgView
+      os.requestTaskPerm \appsView
       m.redraw!
 
    goPath: (path, dontPushHist) !->
@@ -51,7 +52,7 @@ App = m.comp do
          entA.name.localeCompare entB.name
 
    refresh: !->
-      @goPath @path, yes
+      @goPath @dir.path, yes
 
    openEnt: (ent, appName) !->
       if ent.isDir and !@isDesktop
@@ -70,6 +71,9 @@ App = m.comp do
    onclickGoParent: (event) !->
       path = os.dirPath @dir.path
       @goPath path
+
+   onclickRefresh: (event) !->
+      @refresh!
 
    onsubmitForm: (event) !->
       event.preventDefault!
@@ -185,10 +189,15 @@ App = m.comp do
                   @refresh!
             ,,
             *  text: "Tạo mới"
-               icon: \plus
+               icon: \circle-plus
                subitems:
                   *  text: "Thư mục"
                      icon: \folder
+                     click: !~>
+                        dirName = await os.prompt "Nhập tên thư mục:"
+                        if dirName
+                           await os.createDir dirName
+                           @refresh!
                   *  text: "Lối tắt"
                      icon: \square-arrow-up-right
                   ,,
@@ -196,7 +205,7 @@ App = m.comp do
                      icon: \file
             ,,
             *  text: "Mở Terminal tại đây"
-               icon: \fad:terminal
+               icon: \fad:rectangle-terminal
                click: !~>
                   os.runTask \Terminal,
                      args:
@@ -219,11 +228,20 @@ App = m.comp do
                @openEnt ent
          *  text: "Mở bằng"
             subitems:
+               *  os.apps?map (app) ~>
+                     if app.supportedExts.includes ent.ext
+                        text: app.name
+                        icon: app.icon
+                        click: !~>
+                           @openEnt ent, app.name
+               ,,
                *  text: "Chọn ứng dụng khác"
+                  click: !~>
+                     os.openWithEnt ent
          ,,
          *  text: "Đặt làm hình nền desktop"
             icon: \image-landscape
-            visible: ent.ext in <[jpg png webp]>
+            visible: ent.ext in <[jpg jpeg png webp]>
             click: !~>
                os.setDesktopBgImagePath ent.path
          ,,
@@ -234,9 +252,22 @@ App = m.comp do
          ,,
          *  text: "Đổi tên"
             icon: \pen-field
+            click: !~>
+               newName = await os.prompt "Nhập tên mới:" ent.name
+               if newName and newName != ent.name
+                  dirname = os.dirPath ent.path
+                  newPath = "#dirname/#newName"
+                  await os.moveEnt ent, newPath
+                  @refresh!
          *  text: "Xóa"
             icon: \trash
             color: \red
+            click: !~>
+               if ent.isDir
+                  await os.deleteDir ent
+               else
+                  await os.deleteFile ent
+               @refresh!
          ,,
          *  text: "Thông tin chi tiết"
             icon: \circle-info
@@ -263,51 +294,57 @@ App = m.comp do
                   m InputGroup,
                      fill: yes
                      m TextInput,
+                        icon: @dir?icon
                         value: @path
                         onchange: @onchangePath
                      m Button,
+                        disabled: @dir == void
                         icon: \arrow-rotate-right
+                        onclick: @onclickRefresh
                      m Button,
                         type: \submit
                         icon: \arrow-turn-down-left
          m \.col.relative.ov-hidden,
             switch @viewType
             | \list
-               m Table,
-                  class: "h-100 p-3"
-                  striped: yes
-                  interactive: yes
+               m \.h-100.p-3,
                   onpointerdown: @onpointerdownEnts
                   onpointermove: @onpointermoveEnts
                   onpointerup: @onpointerupEnts
                   onlostpointercapture: @onlostpointercaptureEnts
                   oncontextmenu: @oncontextmenuEnts
-                  m \thead,
-                     m \tr,
-                        m \th.col-6,
-                           "Tên"
-                        m \th.col-2,
-                           "Kích thước"
-                        m \th.col-4,
-                           "Ngày sửa đổi"
-                  m \tbody,
-                     @ents.map (ent, i) ~>
+                  m Table,
+                     class: "h-100"
+                     striped: yes
+                     fixed: yes
+                     truncate: yes
+                     interactive: yes
+                     m \thead,
                         m \tr,
-                           key: ent.path
-                           class: m.class do
-                              "bg-blue3": @selEnts.includes ent
-                           "data-i": i
-                           onclick: @onclickEnt.bind void ent
-                           oncontextmenu: @oncontextmenuEnt.bind void ent
-                           m \td,
-                              m Icon,
-                                 class: "mr-2"
-                                 name: ent.icon
-                              ent.name
-                           m \td,
-                              ent.isFile and filesize ent.size or \-
-                           m \td,
-                              dayjs ent.mtime .format "DD/MM/YYYY HH:mm"
+                           m \th.col-6,
+                              "Tên"
+                           m \th.col-2,
+                              "Kích thước"
+                           m \th.col-4,
+                              "Ngày sửa đổi"
+                     m \tbody,
+                        @ents.map (ent, i) ~>
+                           m \tr,
+                              key: ent.path
+                              class: m.class do
+                                 "bg-blue3": @selEnts.includes ent
+                              "data-i": i
+                              onclick: @onclickEnt.bind void ent
+                              oncontextmenu: @oncontextmenuEnt.bind void ent
+                              m \td,
+                                 m Icon,
+                                    class: "mr-2"
+                                    name: ent.icon
+                                 ent.name
+                              m \td,
+                                 ent.isFile and filesize ent.size or \-
+                              m \td,
+                                 dayjs ent.mtime .format "DD/MM/YYYY HH:mm"
             | \desktop
                m \.grid.gap-1.h-100.p-3.bg-center.bg-no-repeat.bg-black,
                   style: m.style do

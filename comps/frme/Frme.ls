@@ -19,6 +19,7 @@ class Frme extends Both
          moveEnt
          copyEnt
          openEnt
+         openWithEnt
          createDir
          readDir
          deleteDir
@@ -27,11 +28,18 @@ class Frme extends Both
          deleteFile
          requestTaskPerm
          runTask
+         closeTask
          setDesktopBgImagePath
          minimize
          maximize
+         setFullscreen
+         show
+         alert
+         confirm
+         prompt
          close
          initTaskFrme
+         loadedTaskFrme
          mousedownFrme
          startListen
          showSubmenuMenu
@@ -39,6 +47,8 @@ class Frme extends Both
          showContextMenu
          showMenubarMenu
          closeMenubarMenu
+         showTooltip
+         closeTooltip
       ]>
       for let methodName in methodNames
          method = (...args) ->
@@ -50,8 +60,15 @@ class Frme extends Both
 
       @bodyEl = @dom.querySelector \.Frme-body
 
+      window.addEventListener \mouseover @onmouseoverGlobal
       window.addEventListener \mousedown @onmousedownGlobal
       window.addEventListener \message @onmessageGlobal
+
+   fitContentSize: !->
+      os.dom.classList.add \Frme--useContentSize
+      {width, height} = @bodyEl.getBoundingClientRect!
+      os.dom.classList.remove \Frme--useContentSize
+      await @sendFTF \fitContentSize width, height
 
    addListener: (name, callback, isResponder) !->
       listener = @listeners[name]
@@ -60,7 +77,7 @@ class Frme extends Both
             responder: void
             callbacks: []
          @listeners[name] = listener
-      if isResponder
+      if isResponder or listener.callbacks.length == 0
          listener.responder = callback
       else
          listener.callbacks.push callback
@@ -76,10 +93,20 @@ class Frme extends Both
       mouseEvent = new MouseEvent \mousedown eventData
       document.dispatchEvent mouseEvent
 
+   onmouseoverGlobal: (event) !->
+      if event.isTrusted
+         if el = event.target.closest "[tooltip]"
+            rect = @getRect el
+            text = el.getAttribute \tooltip
+            @showTooltip rect, text, yes
+         else
+            @closeTooltip!
+
    onmousedownGlobal: (event) !->
       if event.isTrusted
          eventData = event{clientX, clientY, screenX, screenY, buttons}
          os.mousedownFrme eventData
+         @closeTooltip!
 
    onmessageGlobal: (event) !->
       if data = event.data
@@ -91,7 +118,6 @@ class Frme extends Both
                delete @resolvers[mid]
                methodName = isErr and \reject or \resolve
                resolver[methodName] result
-               m.redraw!
          | \tf
             {mid, pid, name, args} = data
             method = @[name]
@@ -103,12 +129,14 @@ class Frme extends Both
                result: result
                isErr: isErr
                \*
-            m.redraw!
          | \ta
             {mid, pid, name, val} = data
             if name.0 == \$
-               propName = name.substring 1
-               os[propName] = val
+               if name.1 == \$
+                  name .= substring 1
+               else
+                  propName = name.substring 1
+                  os[propName] = val
             if listener = @listeners[name]
                for callback in listener.callbacks
                   @safeSyncCall callback, val
@@ -136,4 +164,6 @@ class Frme extends Both
 
    view: ->
       m \.Frme.Portal,
+         class: m.class do
+            "Frme--useContentSize": @useContentSize
          m \.Frme-body

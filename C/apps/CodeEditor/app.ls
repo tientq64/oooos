@@ -78,8 +78,6 @@ App = m.comp do
             if ent.isFile
                @newTab ent
 
-      @newTab!
-
    newTab: (ent, language) !->
       tab =
          id: os.randomUuid!

@@ -21,9 +21,9 @@ App = m.comp do
       @selector.dom.hidden = yes
       await @goPath @path
       if @isDesktop
-         os.requestTaskPerm \taskbarView
-         os.requestTaskPerm \desktopBgView
-      os.requestTaskPerm \appsView
+         os.requestPerm \taskbarView
+         os.requestPerm \desktopBgView
+      os.requestPerm \appsView
       m.redraw!
 
    goPath: (path, dontPushHist) !->
@@ -83,45 +83,43 @@ App = m.comp do
       @path = event.target.value
 
    onpointerdownEnts: (event) !->
-      if event.target == event.currentTarget
-         @selEnts = []
-         if event.buttons == 1
-            entsRect = event.currentTarget.getBoundingClientRect!
-            mouseX = event.x - entsRect.x
-            mouseY = event.y - entsRect.y
-            @selData =
-               x: mouseX
-               y: mouseY
+      if event.buttons == 1
+         @selData = yes
+         @onpointermoveEnts event
 
    onpointermoveEnts: (event) !->
       event.redraw = no
       if @selData
-         if @selector.dom.hidden
+         rect = event.currentTarget.getBoundingClientRect!
+         mouseX = event.x - rect.x
+         mouseY = event.y - rect.y
+         if @selData == yes
+            @selData =
+               x: mouseX
+               y: mouseY
+         else if @selector.dom.hidden
             event.currentTarget.setPointerCapture event.pointerId
             @selector.dom.hidden = no
-         entsRect = event.currentTarget.getBoundingClientRect!
-         mouseX = event.x - entsRect.x
-         mouseY = event.y - entsRect.y
-         selX1 = Math.min @selData.x, mouseX
-         selY1 = Math.min @selData.y, mouseY
-         selX2 = Math.max @selData.x, mouseX
-         selY2 = Math.max @selData.y, mouseY
-         entEls = @dom.querySelectorAll "[data-i]"
+         x1 = Math.min @selData.x, mouseX
+         y1 = Math.min @selData.y, mouseY
+         x2 = Math.max @selData.x, mouseX
+         y2 = Math.max @selData.y, mouseY
          @selEnts = []
-         for entEl in entEls
-            entRect = entEl.getBoundingClientRect!
-            entX1 = entRect.x - entsRect.x
-            entY1 = entRect.y - entsRect.y
-            entX2 = entRect.right - entsRect.x
-            entY2 = entRect.bottom - entsRect.y
-            unless selX1 >= entX2 or selX2 <= entX1 or selY1 >= entY2 or selY2 <= entY1
-               ent = @ents[entEl.dataset.i]
+         els = @dom.querySelectorAll "[data-i]"
+         for el in els
+            entRect = el.getBoundingClientRect!
+            x3 = entRect.x - rect.x
+            y3 = entRect.y - rect.y
+            x4 = entRect.right - rect.x
+            y4 = entRect.bottom - rect.y
+            unless x1 >= x4 or x2 <= x3 or y1 >= y4 or y2 <= y3
+               ent = @ents[el.dataset.i]
                @selEnts.push ent
          @selector.dom.style <<< m.style do
-            left: selX1
-            top: selY1
-            width: selX2 - selX1
-            height: selY2 - selY1
+            left: x1
+            top: y1
+            width: x2 - x1
+            height: y2 - y1
          m.redraw!
 
    onpointerupEnts: (event) !->
@@ -215,7 +213,6 @@ App = m.comp do
                icon: \circle-info
 
    onclickEnt: (ent, event) !->
-      @selEnts = [ent]
       if event.detail % 2 == 0
          @openEnt ent
 
@@ -314,7 +311,7 @@ App = m.comp do
                   onlostpointercapture: @onlostpointercaptureEnts
                   oncontextmenu: @oncontextmenuEnts
                   m Table,
-                     class: "h-100"
+                     class: "max-h-100"
                      striped: yes
                      fixed: yes
                      truncate: yes
@@ -350,7 +347,7 @@ App = m.comp do
                   style: m.style do
                      paddingTop: os.taskbarHeight + 12 if os.taskbarPosition == \top
                      paddingBottom: os.taskbarHeight + 12 if os.taskbarPosition == \bottom
-                     gridTemplateRows: "repeat(auto-fill, minmax(100px, 1fr))"
+                     gridTemplateRows: "repeat(auto-fill, 100px)"
                      gridAutoColumns: 120
                      gridAutoFlow: \column
                      backgroundImage: "url(#that)" if os.desktopBgImageDataUrl
@@ -364,7 +361,7 @@ App = m.comp do
                         m \.column.center.middle.gap-2.rounded.text-center.text-white,
                            key: ent.path
                            class: m.class do
-                              "bg-blue3 bg-opacity-50": @selEnts.includes ent
+                              "bg-blue2 bg-opacity-50": @selEnts.includes ent
                            "data-i": i
                            onclick: @onclickEnt.bind void ent
                            oncontextmenu: @oncontextmenuEnt.bind void ent

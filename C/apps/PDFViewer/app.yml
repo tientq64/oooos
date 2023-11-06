@@ -1,0 +1,6 @@
+name: PDFViewer
+icon: fad:book-open-reader
+admin: yes
+width: 960
+height: 800
+supportedExts: [pdf]

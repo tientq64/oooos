@@ -49,7 +49,7 @@ class OS extends Task
 
       m.redraw!
 
-      @runTask \Test
+      # @runTask \PDFViewer
 
    updateDesktopSize: !->
       @desktopWidth = innerWidth
@@ -83,7 +83,7 @@ class OS extends Task
    initFiles: !->
       await fs.init do
          bytes: 1024 * 1024 * 512
-      for path in Paths"/C/!(apps)/**"
+      for path in Paths"/C/{*,!(apps)/**}"
          if path.includes \.
             buf = await m.fetch path, \arrayBuffer
             await @writeFile path, buf
@@ -203,7 +203,8 @@ class OS extends Task
          if el = event.target.closest "[tooltip]"
             rect = @getRect el
             text = el.getAttribute \tooltip
-            @showTooltip rect, text, no
+            isDark = @checkElIsDark el
+            @showTooltip rect, text, isDark, no
          else
             @closeTooltip!
 
@@ -212,33 +213,50 @@ class OS extends Task
          eventData = event{screenX, screenY, buttons}
          eventData.clientX = -1
          eventData.clientY = -1
-         for task in @tasks
-            task.sendTF \mousedownMain eventData
+         @sendAll \call \mousedownMain eventData
          @closeTooltip!
 
    onmessageGlobal: (event) !->
-      if data = event.data
-         {type} = data
-         switch type
-         | \ftf
-            {mid, tid, name, args} = data
-            if task = @tasks.find (.tid == tid)
-               method = task[name]
-               [result, isErr] = await @safeAsyncApply method, args
-               task.postMessage? do
-                  type: \ftf
-                  mid: mid
-                  result: result
-                  isErr: isErr
-                  \*
-         | \tf \ta
-            {mid, pid, result, isErr} = data
-            if task = @tasks.find (.pid == pid)
-               if resolver = task.resolvers[mid]
-                  delete task.resolvers[mid]
-                  methodName = isErr and \reject or \resolve
-                  resolver[methodName] result
-                  m.redraw!
+      if !event.isTrusted or event.origin != \null or !event.data
+         return
+      {flow, act, mid, tid, pid, name, vals, result, isErr} = event.data
+      switch flow
+      | \mfm
+         task = @tasks.find (.pid == pid)
+         unless task
+            return
+         task.resolveResolver mid, result, isErr
+      | \fmf
+         task = @tasks.find (.tid == tid)
+         unless task
+            return
+         isWait = no
+         switch act
+         | \call
+            isCall = yes
+            method = task[name]
+         | \callWait
+            isCall = yes
+            isWait = yes
+            method = task[name]
+         if isCall
+            try
+               res = method ...vals
+               if res instanceof Promise
+                  if isWait
+                     result = await res
+               else
+                  result = res
+            catch
+               result = e
+               isErr = yes
+         if task.postMessage
+            task.postMessage do
+               flow: flow
+               mid: mid
+               result: result
+               isErr: isErr
+               \*
 
    view: (vnode) ->
       super vnode,
@@ -257,6 +275,8 @@ class OS extends Task
                         m task,
                            key: task.pid
                m \.OS-taskbar,
+                  style: m.style do
+                     height: @taskbarHeight
                   oncontextmenu: @oncontextmenuTaskbar
                   m \.OS-taskbarHome,
                      m Button,

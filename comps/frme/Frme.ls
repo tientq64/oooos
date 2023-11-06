@@ -9,6 +9,8 @@ class Frme extends Both
 
       @bodyEl = void
       @listeners = {}
+      @answerers = {}
+      @listened = no
 
       @initFTFMethods!
 
@@ -26,22 +28,22 @@ class Frme extends Both
          readFile
          writeFile
          deleteFile
-         requestTaskPerm
+         requestPerm
          runTask
          closeTask
          setDesktopBgImagePath
          minimize
          maximize
          setFullscreen
+         setDarkMode
          show
          alert
          confirm
          prompt
          close
          initTaskFrme
-         loadedTaskFrme
+         loadedFrme
          mousedownFrme
-         startListen
          showSubmenuMenu
          closeSubmenuMenu
          showContextMenu
@@ -52,7 +54,7 @@ class Frme extends Both
       ]>
       for let methodName in methodNames
          method = (...args) ->
-            @sendFTF methodName, ...args
+            @send \callWait methodName, ...args
          @[methodName] = method.bind @
 
    oncreate: (vnode) !->
@@ -64,41 +66,49 @@ class Frme extends Both
       window.addEventListener \mousedown @onmousedownGlobal
       window.addEventListener \message @onmessageGlobal
 
-   fitContentSize: !->
+   fitContentSize: ->
       os.dom.classList.add \Frme--useContentSize
       {width, height} = @bodyEl.getBoundingClientRect!
       os.dom.classList.remove \Frme--useContentSize
-      await @sendFTF \fitContentSize width, height
+      @send \callWait \fitContentSize width, height
 
-   addListener: (name, callback, isResponder) !->
-      listener = @listeners[name]
-      unless listener
-         listener =
-            responder: void
-            callbacks: []
-         @listeners[name] = listener
-      if isResponder or listener.callbacks.length == 0
-         listener.responder = callback
-      else
+   startListen: ->
+      @listened = yes
+      @send \callWait \startListen yes
+
+   addListener: (name, callback) !->
+      if @isFunc callback
+         listener = @listeners[name]
+         unless listener
+            listener =
+               callbacks: []
+            @listeners[name] = listener
          listener.callbacks.push callback
 
    removeListener: (name, callback) !->
-      if listener = @listeners[name]
-         if listener.responder == callback
-            listener.responder = void
-         index = listener.callbacks.indexOf callback
-         listener.callbacks.splice index, 1
+      if @isFunc callback
+         if listener = @listeners[name]
+            @removeArr listener.callbacks, callback
+
+   setAnswerer: (name, callback) !->
+      if @isFunc
+         @answerers[name] = callback
+      else
+         delete @answerers[name]
 
    mousedownMain: (eventData) !->
       mouseEvent = new MouseEvent \mousedown eventData
       document.dispatchEvent mouseEvent
+
+   closeFrme: !->
 
    onmouseoverGlobal: (event) !->
       if event.isTrusted
          if el = event.target.closest "[tooltip]"
             rect = @getRect el
             text = el.getAttribute \tooltip
-            @showTooltip rect, text, yes
+            isDark = @checkElIsDark el
+            @showTooltip rect, text, isDark, yes
          else
             @closeTooltip!
 
@@ -109,61 +119,81 @@ class Frme extends Both
          @closeTooltip!
 
    onmessageGlobal: (event) !->
-      if data = event.data
-         {type} = data
-         switch type
-         | \ftf
-            {mid, result, isErr} = data
-            if resolver = @resolvers[mid]
-               delete @resolvers[mid]
-               methodName = isErr and \reject or \resolve
-               resolver[methodName] result
-         | \tf
-            {mid, pid, name, args} = data
+      if !event.isTrusted or event.origin == \null or !event.data
+         return
+      {flow, act, mid, pid, name, vals, result, isErr} = event.data
+      switch flow
+      | \fmf
+         @resolveResolver mid, result, isErr
+      | \mfm
+         isWait = no
+         switch act
+         | \call
+            isCall = yes
             method = @[name]
-            [result, isErr] = await @safeAsyncApply method, args
-            parent.postMessage do
-               type: \tf
-               mid: mid
-               pid: pid
-               result: result
-               isErr: isErr
-               \*
-         | \ta
-            {mid, pid, name, val} = data
-            if name.0 == \$
-               if name.1 == \$
-                  name .= substring 1
-               else
-                  propName = name.substring 1
-                  os[propName] = val
+         | \set
+            isSet = yes
+            isRedraw = yes
+         | \emit
+            isEmit = yes
+            isRedraw = yes
+            listener = @listeners[name]
+         | \ask
+            isCall = yes
+            isCallIfIsFunc = yes
+            isWait = yes
+            isRedraw = yes
+            method = @answerers[name]
+         | \perm
+            isSet = yes
+            isEmit = yes
+            isRedraw = yes
+            listener = @listeners[name]
+         if isSet
+            @[name] = vals.0
+         if isEmit
             if listener = @listeners[name]
                for callback in listener.callbacks
-                  @safeSyncCall callback, val
-               if listener.responder
-                  [result, isErr] = await @safeAsyncCall listener.responder, val
-            parent.postMessage do
-               type: \ta
-               mid: mid
-               pid: pid
-               result: result
-               isErr: isErr
-               \*
+                  @safeSyncCall callback, vals.0
+         if isRedraw
             m.redraw!
+         if isCall
+            if @isFunc method or !isCallIfIsFunc
+               try
+                  res = method ...vals
+                  if res instanceof Promise
+                     if isWait
+                        result = await res
+                  else
+                     result = res
+               catch
+                  result = e
+                  isErr = yes
+         if isRedraw
+            m.redraw!
+         parent.postMessage do
+            flow: flow
+            mid: mid
+            pid: pid
+            result: result
+            isErr: isErr
+            \*
 
-   sendFTF: (name, ...args) ->
+   send: (act, name, ...vals) ->
       [mid, promise] = @addResolver!
       parent.postMessage do
-         type: \ftf
+         flow: \fmf
+         act: act
          mid: mid
          tid: @tid
          name: name
-         args: args
+         vals: vals
          \*
       promise
 
    view: ->
       m \.Frme.Portal,
          class: m.class do
+            "dark": @darkMode
             "Frme--useContentSize": @useContentSize
          m \.Frme-body

@@ -1,6 +1,5 @@
 App = m.comp do
    oninit: !->
-      @isDarkMode = no
       @text = "Nidoqueen"
       @bool = yes
       @boolTestPatchDom = no
@@ -126,35 +125,35 @@ App = m.comp do
 
       @pokemons =
          *  no: 554
-            text: "Darumakka (Dạng Galar)"
+            text: "Darumaka (Dạng Galar)"
             types: [\ice]
             dex: "Sống quá lâu ở vùng tuyết phủ, túi lửa của nó đã nguội lạnh và thoái hóa. Hiện tại nó đã có bộ phận tạo ra khí lạnh."
          *  no: 459
-            text: "Yukikaburi"
+            text: "Snover"
             types: [\grass \ice]
-            dex: "Yukikaburi sống sâu trong núi tuyết. Nó chôn chân xuống tuyết để hấp thụ nước và khí lạnh."
+            dex: "Snover sống sâu trong núi tuyết. Nó chôn chân xuống tuyết để hấp thụ nước và khí lạnh."
          *  no: 60
-            text: "Nyoromo"
+            text: "Poliwag"
             types: [\water]
-            dex: "Nyoromo rất thích lên cạn bất chấp mọi nguy hiểm. Tuy chỉ lê bước lạch bạch, chúng có thể lao nhanh xuống nước nếu gặp phải kẻ thù."
+            dex: "Poliwag rất thích lên cạn bất chấp mọi nguy hiểm. Tuy chỉ lê bước lạch bạch, chúng có thể lao nhanh xuống nước nếu gặp phải kẻ thù."
          *  no: 861
-            text: "Oronge"
+            text: "Grimmsnarl"
             types: [\dark \fairy]
-            dex: "Nó cuộn toàn bộ lông trên cơ thể lại để tăng sức mạnh cơ bắp, Oronge có sức mạnh vượt trội hơn cả Kairiky."
+            dex: "Nó cuộn toàn bộ lông trên cơ thể lại để tăng sức mạnh cơ bắp, Grimmsnarl có sức mạnh vượt trội hơn cả Machamp."
          *  no: 862
-            text: "Tachifusaguma"
+            text: "Obstagoon"
             types: [\dark \normal]
             dex: "Sở hữu giọng nói với âm lượng khủng khiếp. Tiếng hét để đe dọa của nó còn được gọi là chiêu thức Chặn Đứng."
          *  no: 178
-            text: "Natio"
+            text: "Xatu"
             types: [\psychic \flying]
             dex: "Nó có thể nhìn thấu quá khứ và tương lai. Là loại Pokémon kì lạ, nó quan sát chuyển động của mặt trời mỗi ngày."
          *  no: 817
-            text: "Jimeleon"
+            text: "Drizzile"
             types: [\water]
             dex: "Là một chiến binh tài giỏi, Pokémon này chiến đấu bằng cách tạo ra những quả bóng nước từ hơi ẩm trong lòng bàn tay."
          *  no: 328
-            text: "Nuckrar"
+            text: "Trapinch"
             types: [\ground]
             dex: "Tổ mà nó tạo ra trên sa mạc có hình dạng cong như cái chén, nếu rơi vào thì không thể thoát ra."
 
@@ -162,18 +161,18 @@ App = m.comp do
 
    view: ->
       m \.row.wrap.middle.gap-3.h-100.p-3.ov-auto,
-         class: m.class do
-            "dark": @isDarkMode
          onscroll: os.fixBlurryScroll
 
-         m Button,
-            onclick: !~>
-               != @isDarkMode
+         m Switch,
+            checked: os.darkMode
+            onchange: !~>
+               os.setDarkMode event.target.checked
             "Light/dark mode"
-         m Button,
-            onclick: !~>
-               != @boolTestPatchDom
-            "@boolTestPatchDom: #@boolTestPatchDom"
+         m Switch,
+            checked: @boolTestPatchDom
+            onchange: !~>
+               @boolTestPatchDom = event.target.checked
+            "@boolTestPatchDom"
          m Button,
             onclick: !~>
                setTimeout !~>
@@ -182,7 +181,7 @@ App = m.comp do
                , 2000
             "Sau 2s"
          if @boolTestPatchDom
-            m \p,
+            m \div,
                "Đoạn này xuất hiện với mục đích test bản vá DOM."
          m \span,
             "@bool: #@bool"
@@ -268,10 +267,11 @@ App = m.comp do
                != @popoverIsOpen
             "@popoverIsOpen: #@popoverIsOpen"
          m Popover,
+            maxWidth: 400
             isOpen: @popoverIsOpen
             content: ~>
-               m \.m-2,
-                  "Pop peep 🍿🫑"
+               m \.m-3,
+                  @longText
             m Button,
                "Controlled"
 

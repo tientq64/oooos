@@ -1,5 +1,15 @@
 # CHANGELOG
 
+## [0.4.0] - 06/11/2023
+
+- Viết lại toàn bộ hệ thống tin nhắn giữa main và frme. Dùng tham số `flow` và `act` thay cho `type`. Tên listener không còn dùng dấu $ đằng trước nữa. Đổi tên responder thành answerer. Listener và answerer hiện đã được tách ra riêng biệt, không còn liên quan đến nhau.
+- Thêm component `Switch`.
+- Thêm app `PDFViewer`.
+- Đã làm xong dark mode. Tuy nhiên sau sẽ đổi thành theme, gồm 3 giá trị: `dark`, `light` và tùy thuộc hệ thống.
+- Cải thiện dark mode CSS cho các component. Tooltip sẽ là light mode nếu target là dark mode, và ngược lại.
+- Nén ảnh nền, tiết kiệm được khá nhiều dung lượng.
+- Thêm badge vào README.
+
 ## [0.3.0] - 05/11/2023
 
 - Viết lại hàm `Both::import`, thay vì dùng `eval` thực thi JS và dùng thẻ `style` thêm CSS như trước, bây giờ sẽ thêm thẻ `script` và `link` với URL.
@@ -18,7 +28,7 @@
 - Component `Task`: Thêm thuộc tính `env`. Dự định để bỏ các thuộc tính có dấu $ ở cuối, thay vào đó dựa vào `env` để update các thuộc tính tương ứng. Cũng thêm thuộc tính `parentTask` để biết task nào là task cha của task này, thông thường là task khởi chạy nhưng có thể gán cho một task khác khi run. Thuộc tính `noHeader` bây giờ sẽ không tính toán dựa vào thuộc tính `fullscreen` nữa, mà dùng hàm `getNoHeader` thay thế. Cũng thêm các thuộc tính và hàm khác nữa.
 - Thêm loại app `core`, loại app này sẽ chạy ngay trong main, không phải trong iframe. Điều này giúp app tải và chạy nhanh hơn đáng kể. Và vì chạy trong main nên app có thể truy cập vào toàn bộ hđh.
 - Khắc phục một vài text hiển thị không sắc nét, bằng cách thêm CSS background.
-- Cải thiện fullscreen animation, thay easing bằng các biến Stylus.
+- Cải thiện fullscreen animation, bao gồm cả header animation. Thay easing bằng các biến Stylus.
 - Cải thiện dark mode.
 
 ## [0.2.0] - 22/10/2023

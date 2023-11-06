@@ -8,6 +8,7 @@ m.mount document.body, os
 $ = await os.initTaskFrme!
 os.tid = $.tid
 os.useContentSize = $.useContentSize
+os.darkMode = $.darkMode
 os.args = $.args
 
 await (!->
@@ -20,4 +21,4 @@ await (!->
 
 if $.autoListen
    os.startListen!
-os.loadedTaskFrme!
+os.loadedFrme!

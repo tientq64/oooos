@@ -1,8 +1,8 @@
 {
    "name": "oooos",
    "displayName": "OooOS",
-   "version": "0.3.0",
-   "description": "Ò ó o o... hệ điều hành này mới nở mha",
+   "version": "0.4.0",
+   "description": "Fake operating system running in browser (not done yet)",
    "author": "tientq64",
    "keywords": [
       "os",

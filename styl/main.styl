@@ -18,7 +18,7 @@
 .OS--fullscreen
    > .OS-body
       > .OS-taskbar
-         height: 0
+         height: 0 !important
          padding-top: 0
          padding-bottom: 0
          border-top: 0
@@ -101,6 +101,10 @@
    pointer-events: none
    z-index: 1090
 
+.OS-tooltip--light
+   background: $gray4
+   color: $gray0
+
 .Task
    position: absolute
    border-radius: 8px
@@ -110,6 +114,9 @@
    box-shadow: 0 0 0 1px $gray2, $shadow
    opacity: 0
    pointer-events: none
+
+   +dark()
+      background: $gray0
 
 .Task--shown
    opacity: unset
@@ -169,6 +176,9 @@
    transition-timing-function: $easeOut
    z-index: 2
 
+   +dark()
+      background: $gray0
+
 .Task-title
    min-width: 0
    padding: 0 8px
@@ -184,6 +194,9 @@
 .Task-buttons
    background: #fff
 
+   +dark()
+      background: $gray0
+
 .Task-body
    position: relative
    margin: 4px
@@ -196,6 +209,9 @@
    transition-timing-function: $easeOut
    z-index: 1
 
+   +dark()
+      background: $gray0
+
 .Task-frame
    position: absolute
    width: 100%
@@ -203,6 +219,9 @@
    max-height: 100%
    border: 0
    background: #fff
+
+   +dark()
+      background: $gray0
 
 .Task-resizes
    position: absolute

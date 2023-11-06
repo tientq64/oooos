@@ -40,6 +40,7 @@ class Task extends Both
       @maximized = Boolean env.maximized ? app.maximized ? no
       @fullscreen = Boolean env.fullscreen ? app.fullscreen ? no
       @useContentSize = Boolean env.useContentSize ? app.useContentSize ? no
+      @darkMode = Boolean env.darkMode ? app.darkMode ? no
       @noHeader = Boolean env.noHeader ? app.noHeader ? no
       @skipTaskbar = Boolean env.skipTaskbar ? app.skipTaskbar ? no
       @hidden = Boolean env.hidden ? app.hidden ? @useContentSize
@@ -47,7 +48,7 @@ class Task extends Both
       @supportedExts = app.supportedExts
       @openEntsSameTask = Boolean env.openEntsSameTask ? app.openEntsSameTask ? no
       @args = env.args ? app.args ? {}
-      @perms = @createTaskPerms env.perms ? app.perms
+      @perms = @createTaskPerms!
 
       @isSandbox = @type !in [\os \core]
       @closed = no
@@ -239,7 +240,7 @@ class Task extends Both
          if app = @getApp appName
             pid = os.runTask app.name
             await os.waitListenedTask pid
-            os.emitTask pid, \ents [ent]
+            os.sendTask pid, \emit \ents [ent]
       else
          if ent.isDir
             os.runTask \FileManager,
@@ -255,7 +256,7 @@ class Task extends Both
                if app = os.apps.find (.supportedExts.includes ent.ext)
                   pid = os.runTask app.name
                   await os.waitListenedTask pid
-                  os.emitTask pid, \ents [ent]
+                  os.sendTask pid, \emit \ents [ent]
                else
                   os.openWithEnt ent
 
@@ -322,6 +323,7 @@ class Task extends Both
             maximized: pack.maximized
             fullscreen: pack.fullscreen
             useContentSize: pack.useContentSize
+            darkMode: pack.darkMode
             noHeader: pack.noHeader
             skipTaskbar: pack.skipTaskbar
             isModal: pack.isModal
@@ -342,7 +344,7 @@ class Task extends Both
          await os.writeFile "#path/app.yml" yaml
          os.apps.push app
          vapps = @getVapps!
-         @permEmitAll \appsView \$apps vapps
+         @sendPermAll \appsView \apps vapps
       m.redraw!
 
    getVapps: ->
@@ -375,6 +377,9 @@ class Task extends Both
             status: \ask
          *  name: \appsView
             status: \ask
+         *  name: \darkModeView
+            status: \granted
+            requested: yes
          *  name: \tasksView
             status: \ask
          *  name: \entsView
@@ -393,23 +398,9 @@ class Task extends Both
 
    createTaskPerms: (permsData) ->
       taskPerms = structuredClone @app.perms
-      if Array.isArray permsData
-         for name in permsData
-            if typeof name == \string
-               if typeof! name == \Object
-                  [name, val] = Object.entries name .0
-               if taskPerm = taskPerms.find (.name == name)
-                  if name in [\entsView \entsEdit]
-                     if taskPerm.status == \denied
-                        taskPerm.status = \ask
-                        taskPerm.paths.push val.map (path) ~>
-                           path: path
-                           status: \granted
-                  else
-                     taskPerm.status = \granted
       taskPerms
 
-   requestTaskPerm: (name, val) ->
+   requestPerm: (name, val) ->
       if taskPerm = @perms.find (.name == name)
          {status} = taskPerm
          if @admin
@@ -431,35 +422,45 @@ class Task extends Both
             taskPerm.requested = yes
             switch name
             | \taskbarView
-               await @permEmit name, \$taskbarPosition os.taskbarPosition
-               await @permEmit name, \$taskbarHeight os.taskbarHeight
+               await @promiseAllSettled do
+                  @sendPerm name, \taskbarPosition os.taskbarPosition
+                  @sendPerm name, \taskbarHeight os.taskbarHeight
             | \desktopBgView
-               await @permEmit name, \$desktopBgImageDataUrl os.desktopBgImageDataUrl
+               await @promiseAllSettled do
+                  @sendPerm name, \desktopBgImageDataUrl os.desktopBgImageDataUrl
             | \appsView
                vapps = @getVapps!
-               await @permEmit name, \$apps vapps
+               await @promiseAllSettled do
+                  @sendPerm name, \apps vapps
       else
          throw Error "Quyền không xác định"
       status
 
-   emit: (evtName, val) ->
-      @sendTA evtName, val
+   send: (act, name, ...vals) ->
+      if @postMessage
+         [mid, promise] = @addResolver!
+         @postMessage do
+            flow: \mfm
+            act: act
+            mid: mid
+            pid: @pid
+            name: name
+            vals: vals
+            \*
+         promise
 
-   emitAll: (evtName, val) ->
-      Promise.all os.tasks.map (task) ~>
-         task.emit evtName, val
+   sendAll: (act, name, ...vals) ->
+      Promise.allSettled os.tasks.map (task) ~>
+         task.send act, name, ...vals
 
-   permEmit: (permName, propName, val) ->
+   sendPerm: (permName, name, val) ->
       perm = @perms.find (.name == permName)
       if perm.requested
-         @sendTA propName, val
+         @send \perm name, val
 
-   permEmitAll: (permName, propName, val) ->
-      Promise.all os.tasks.map (task) ~>
-         task.permEmit permName, propName, val
-
-   eventEmit: (eventName, val) ->
-      @sendTA eventName, val
+   sendPermAll: (permName, name, val) ->
+      Promise.allSettled os.tasks.map (task) ~>
+         @sendPerm permName, name, val
 
    runTask: (name, env = {}) ->
       env.parentTask ?= @
@@ -482,9 +483,9 @@ class Task extends Both
       if task = os.tasks.find (.pid == pid)
          task.closedPromise
 
-   emitTask: (pid, evtName, val) ->
+   sendTask: (pid, act, name, ...vals) ->
       if task = @getTask pid
-         task.emit evtName, val
+         task.send act, name, ...vals
 
    closeTask: (pid, val) !->
       if task = @getTask pid
@@ -493,7 +494,7 @@ class Task extends Both
    setTaskbarPosition: (val) !->
       unless os.taskbarPosition == val
          os.taskbarPosition = val
-         os.permEmitAll \taskbarView \$taskbarPosition val
+         @sendPermAll \taskbarView \taskbarPosition val
       m.redraw!
 
    setDesktopBgImagePath: (path) !->
@@ -501,7 +502,7 @@ class Task extends Both
       dataUrl = await os.readFile path, \dataUrl
       os.desktopBgImagePath = path
       os.desktopBgImageDataUrl = dataUrl
-      @permEmitAll \desktopBgView \$desktopBgImageDataUrl dataUrl
+      @sendPermAll \desktopBgView \desktopBgImageDataUrl dataUrl
       m.redraw!
 
    focus: (skipFocusModals) !->
@@ -568,6 +569,13 @@ class Task extends Both
       @show!
       m.redraw!
 
+   setDarkMode: (val) !->
+      val = Boolean val ? !@darkMode
+      if val != @darkMode
+         @darkMode = val
+         @sendPerm \darkModeView \darkMode val
+         m.redraw!
+
    show: !->
       if @hidden
          @hidden = no
@@ -629,12 +637,12 @@ class Task extends Both
       if !@closed and !@isAskingClose
          @isAskingClose = yes
          m.redraw!
-         isClose = await @eventEmit \$$close
-         @isAskingClose = no
+         isClose = await @send \ask \close
          unless isClose == no
+            await @send \call \closeFrme
+            @closed = yes
             @listened = no
             @postMessage = void
-            @closed = yes
             for , resolver of @resolvers
                resolver.resolve!
             if @listenedResolve
@@ -645,6 +653,7 @@ class Task extends Both
             index = os.tasks.indexOf @
             os.tasks.splice index, 1
             os.updateFocusedTask!
+         @isAskingClose = no
          m.redraw!
 
    updateMinSize: !->
@@ -714,30 +723,6 @@ class Task extends Both
          @minimizeAnim?reverse!
          @minimizeAnim = void
 
-   sendTF: (name, ...args) ->
-      if @postMessage
-         [mid, promise] = @addResolver!
-         @postMessage do
-            type: \tf
-            mid: mid
-            pid: @pid
-            name: name
-            args: args
-            \*
-         promise
-
-   sendTA: (name, val) ->
-      if @postMessage
-         [mid, promise] = @addResolver!
-         @postMessage do
-            type: \ta
-            mid: mid
-            pid: @pid
-            name: name
-            val: val
-            \*
-         promise
-
    addRectXYByFrameEl: (rect) !->
       frameRect = @frameEl.getBoundingClientRect!
       rect.x += frameRect.x
@@ -752,6 +737,7 @@ class Task extends Both
       @postMessage = @frameEl.contentWindow~postMessage
       tid: @tid
       useContentSize: @useContentSize
+      darkMode: @darkMode
       autoListen: @autoListen
       args: @args
 
@@ -773,7 +759,7 @@ class Task extends Both
       eventData.clientY = -1
       for task in os.tasks
          unless task == @
-            task.sendTF \mousedownMain eventData
+            task.send \call \mousedownMain eventData
 
    startListen: (val) !->
       if @listenedResolve
@@ -857,33 +843,36 @@ class Task extends Both
          os.menubarMenuClose!
          os.menubarMenuClose = void
 
-   showTooltip: (rect, text, isAddFrameXY) !->
-      @closeTooltip!
-      @tooltipTimerId = setTimeout !~>
-         vals = @formatTooltip text
-         text := vals.0
-         placements = vals.1
-         if isAddFrameXY
-            @addRectXYByFrameEl rect
-         targetEl =
-            getBoundingClientRect: ~>
-               rect
-         popperEl = document.createElement \div
-         popperEl.className = "OS-tooltip"
-         portalEl = os.dom
-         portalEl.appendChild popperEl
-         m.render popperEl, text
-         popper = @createPopper targetEl, popperEl,
-            placement: placements.0
-            offset: [0 3]
-            flips: placements.slice 1
-         os.tooltipClose = !~>
-            if popper
-               m.render popperEl
-               popperEl.remove!
-               popper.destroy!
-               popper := void
-      , 200
+   showTooltip: (rect, text, isDark, isAddFrameXY) !->
+      if text.trim!
+         @closeTooltip!
+         @tooltipTimerId = setTimeout !~>
+            vals = @formatTooltip text
+            text := vals.0
+            placements = vals.1
+            if isAddFrameXY
+               @addRectXYByFrameEl rect
+            targetEl =
+               getBoundingClientRect: ~>
+                  rect
+            popperEl = document.createElement \div
+            popperEl.className = m.class do
+               "OS-tooltip--light": isDark
+               "OS-tooltip"
+            portalEl = os.dom
+            portalEl.appendChild popperEl
+            m.render popperEl, text
+            popper = @createPopper targetEl, popperEl,
+               placement: placements.0
+               offset: [0 3]
+               flips: placements.slice 1
+            os.tooltipClose = !~>
+               if popper
+                  m.render popperEl
+                  popperEl.remove!
+                  popper.destroy!
+                  popper := void
+         , 200
 
    closeTooltip: !->
       clearTimeout @tooltipTimerId
@@ -999,6 +988,7 @@ class Task extends Both
    view: (vnode, vdom) ->
       m \.Task,
          class: m.class do
+            "dark": @darkMode
             "Task--shown": !@hidden
             "Task--minimized": @minimized
             "Task--maximized": @maximized

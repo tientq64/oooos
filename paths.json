@@ -10,6 +10,7 @@
       "/comps/both/PasswordInput.ls",
       "/comps/both/Popover.ls",
       "/comps/both/Radio.ls",
+      "/comps/both/Switch.ls",
       "/comps/both/Table.ls",
       "/comps/both/Textarea.ls",
       "/comps/both/TextInput.ls"
@@ -25,12 +26,15 @@
       "/C/apps/FileManager",
       "/C/apps/ImageViewer",
       "/C/apps/OpenWith",
+      "/C/apps/PDFViewer",
       "/C/apps/Popup",
       "/C/apps/Terminal",
       "/C/apps/Test",
       "/C/apps/TextArea"
    ],
-   "/C/!(apps)/**": [
+   "/C/{*,!(apps)/**}": [
+      "/C/apps",
+      "/C/helloworld.pdf",
       "/C/images",
       "/C/images/background",
       "/C/images/background/gradient-blue-pink.jpg",

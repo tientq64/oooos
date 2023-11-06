@@ -3,6 +3,7 @@ class Both
       m.bind @
 
       @incrId = 0
+      @noopFunc = !~>
 
       @dom = void
 
@@ -63,6 +64,11 @@ class Both
       arr = @castArr arr
       Array.from arr
 
+   removeArr: (arr, val) ->
+      index = arr.indexOf val
+      arr.splice index, 1
+      arr
+
    uniqueArr: (arr) ->
       set = new Set arr
       arr.splice 0 Infinity, ...set
@@ -79,6 +85,9 @@ class Both
    castNewObj: (obj, key) ->
       obj = @castObj obj, key
       {...obj}
+
+   isFunc: (func) ->
+      typeof func == \function
 
    safeSyncApply: (fn, args) ->
       try
@@ -117,6 +126,12 @@ class Both
          @safeAsyncApply fn, args
       else
          [fn, no]
+
+   promiseAll: (...promises) ->
+      Promise.all promises
+
+   promiseAllSettled: (...promises) ->
+      Promise.allSettled promises
 
    splitPath: (path) ->
       root = ""
@@ -350,6 +365,9 @@ class Both
       right: x
       bottom: y
 
+   checkElIsDark: (el) ->
+      Boolean el.closest \.dark
+
    createPopper: (targetEl, popperEl, opts = {}) ->
       Popper.createPopper targetEl, popperEl,
          placement: opts.placement or \auto
@@ -440,6 +458,12 @@ class Both
             reject: reject
          @resolvers[mid] = resolver
       [mid, promise]
+
+   resolveResolver: (mid, result, isErr) !->
+      if resolver = @resolvers[mid]
+         delete @resolvers[mid]
+         methodName = isErr and \reject or \resolve
+         resolver[methodName] result
 
    oncontextmenuGlobalBoth: (event) !->
       if event.isTrusted

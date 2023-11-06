@@ -48,7 +48,7 @@ App = m.comp do
          isMarkdown: yes
 
    view: ->
-      m \.column.h-100.dark,
+      m \.column.h-100,
          m \.col-0.p-1,
             m Menubar,
                menus:

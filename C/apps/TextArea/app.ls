@@ -10,7 +10,7 @@ App = m.comp do
          @val = await os.readFile @ent
          m.redraw!
 
-      os.addListener \$close ~>
+      os.setAnswerer \close ~>
          if @modified
             result = await os.confirm "Sửa đổi chưa được lưu, lưu lại trước khi đóng?" yes
             switch result
@@ -28,7 +28,7 @@ App = m.comp do
       @val = event.target.value
 
    view: ->
-      m \.column.gap-1.p-1.h-100,
+      m \.column.gap-1.h-100.p-1,
          m \.col-0,
             m Menubar,
                menus:

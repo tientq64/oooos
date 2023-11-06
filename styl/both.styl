@@ -37,6 +37,7 @@ p
 
 for val, i in $fontSizes
    h{i + 1}
+      margin: 8px 0
       font-size: val
 
 small
@@ -82,6 +83,10 @@ ul
    border: 1px solid $gray2
    background: #fff
 
+   +dark()
+      background: $gray0
+      color: #fff
+
    &:hover
    &.active
       border-color: $gray1
@@ -91,22 +96,17 @@ ul
          border-color: $gray3
          background: $gray1
 
-   +dark()
-      background: $gray0
-      color: #fff
-
 .Button--basic
    background: #0000
+
+   +dark()
+      color: #fff
 
    &:hover
    &.active
       background: $gray3
 
-   +dark()
-      color: #fff
-
-      &:hover
-      &.active
+      +dark()
          background: $gray1
 
 for k, val in $nonGrayColors
@@ -126,8 +126,16 @@ for k, val in $nonGrayColors
       &.Button--basic
          color: val[1]
 
+         +dark()
+            color: val[2]
+
          &:hover
+         &.active
             background: val[3]
+
+            +dark()
+               background: val[0]
+               color: val[3]
 
 .Button--small
    min-height: 24px
@@ -264,6 +272,48 @@ for k, val in $nonGrayColors
 .Radio-input
 .Checkbox-input
    display: none
+
+.Switch
+   height: 22px
+   display: inline-flex
+   justify-content: center
+   align-items: center
+   gap: 12px
+
+.Switch:has(> .Switch-input:checked)
+   > .Switch-track
+      background: $blue2
+
+      > .Switch-thumb
+         left: calc(100% - 18px)
+         border-color: $blue0
+
+.Switch-input
+   display: none
+
+.Switch-track
+   position: relative
+   width: 40px
+   height: 20px
+   border-radius: 999px
+   background: $gray3
+
+   +dark()
+      background: $gray1
+
+.Switch-thumb
+   position: absolute
+   left: 2px
+   top: 2px
+   width: 16px
+   height: 16px
+   border: 1px solid $gray2
+   border-radius: 999px
+   background: #fff
+   transition: left .2s $easeOut
+
+   +dark()
+      border-color: $gray0
 
 .InputGroup
    display: inline-flex
@@ -460,9 +510,16 @@ for k, val in $nonGrayColors
    box-shadow: 0 0 0 1px $gray2, $shadow
    z-index: 1020
 
+   +dark()
+      background: $gray0
+      color: #fff
+
 .Popover-content
    border-radius: 8px
    background: #fff
+
+   +dark()
+      background: $gray0
 
 {{styl}}
 

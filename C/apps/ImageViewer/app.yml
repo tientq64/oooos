@@ -3,4 +3,5 @@ icon: fad:image
 admin: yes
 width: 1200
 height: 800
+darkMode: yes
 supportedExts: [jpg, jpeg, png, webp, gif]

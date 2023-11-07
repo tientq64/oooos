@@ -32,7 +32,7 @@ App = m.comp do
          m \.col-0,
             m Menubar,
                menus:
-                  *  text: "Tệp tin"
+                  *  text: "Tệp"
                      subitems:
                         *  text: "Tạo mới"
                         *  text: "Mở tập tin..."
@@ -50,7 +50,7 @@ App = m.comp do
                   *  text: "Chỉnh sửa"
                      subitems:
                         *  text: "Cắt"
-                  *  text: "Thông tin"
+                  *  text: "Trợ giúp"
          m \.col,
             m Textarea,
                class: "h-100"

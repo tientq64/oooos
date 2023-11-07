@@ -15,6 +15,39 @@ App = m.comp do
    oncreate: !->
       @exec "path"
 
+   cd: (path) ->
+      if path
+         path = os.joinPath @path, path
+         dir = await os.getEnt path
+         if dir.isDir
+            @path = dir.path
+         else
+            throw Error "Không phải thư mục"
+      @path
+
+   ls: (path) ->
+      path ?= @path
+      path = os.joinPath \/ @path, path
+      ents = await os.readDir path
+      ents.sort (entA, entB) ~>
+         if val = entB.isDir - entA.isDir
+            return val
+         entA.name.localeCompare entB.name
+      @makeTable do
+         *  "Tên"
+            "Kích thước"
+            "Ngày sửa đổi"
+         ents.map (ent) ~>
+            *  ent.name
+               ent.isFile and filesize ent.size or \-
+               dayjs ent.mtime .format "DD/MM/YYYY HH:mm"
+
+   tasks: ->
+      await os.requestPerm \tasksView
+
+   exit: (val) ->
+      os.close val
+
    exec: (input) !->
       input = String input .trim!
       if input
@@ -47,42 +80,6 @@ App = m.comp do
          @scrollToBottom!
          m.redraw!
 
-   cd: (path) ->
-      if path
-         path = os.joinPath @path, path
-         dir = await os.getEnt path
-         if dir.isDir
-            @path = dir.path
-         else
-            throw Error "Không phải thư mục"
-      @path
-
-   ls: (path) ->
-      path ?= @path
-      path = os.joinPath \/ @path, path
-      ents = await os.readDir path
-      ents.sort (entA, entB) ~>
-         if val = entB.isDir - entA.isDir
-            return val
-         entA.name.localeCompare entB.name
-      data =
-         *  "Tên"
-            "Kích thước"
-            "Ngày sửa đổi"
-         ...ents.map (ent) ~>
-            *  ent.name
-               ent.isFile and filesize ent.size or \-
-               dayjs ent.mtime .format "DD/MM/YYYY HH:mm"
-      table.table data,
-         border: table.getBorderCharacters \void
-         columnDefault:
-            paddingLeft: 0
-            paddingRight: 3
-         drawHorizontalLine: ~>
-
-   exit: (val) ->
-      os.close val
-
    help: (funcName) ->
       """
          cd path?
@@ -97,9 +94,19 @@ App = m.comp do
             Thoát ứng dụng.
       """
 
+   makeTable: (headerCols, rows) ->
+      data = [headerCols, ...rows]
+      table.table data,
+         border: table.getBorderCharacters \void
+         columnDefault:
+            paddingLeft: 0
+            paddingRight: 3
+         drawHorizontalLine: ~>
+
    scrollToBottom: !->
-      requestAnimationFrame !~>
+      setTimeout !~>
          @linesVnode.dom.scrollTop = @linesVnode.dom.scrollHeight
+      , 10
 
    onsubmitInputForm: (event) !->
       event.preventDefault!
@@ -109,9 +116,9 @@ App = m.comp do
       @input = event.target.value
 
    view: ->
-      m \.column.gap-3.h-100.p-3.dark,
+      m \.column.h-100.bg-black,
          @linesVnode =
-            m \.col.column.gap-2.rounded.ov-overlay.font-mono.text-pre-wrap.select-text,
+            m \.col.column.gap-2.p-3.ov-auto.font-mono.text-pre-wrap.scroll-smooth.select-text,
                @lines.map (line) ~>
                   m \div,
                      key: line.id
@@ -127,7 +134,7 @@ App = m.comp do
                      else
                         m \.text-white,
                            String line.output
-         m \form.col-0,
+         m \form.col-0.p-3.pt-0,
             onsubmit: @onsubmitInputForm
             m InputGroup,
                fill: yes

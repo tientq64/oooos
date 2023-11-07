@@ -53,7 +53,7 @@ App = m.comp do
          m \.col-0.px-1,
             m Menubar,
                menus:
-                  *  text: "Tệp tin"
+                  *  text: "Tệp"
                      subitems:
                         *  text: "Thoát"
                            icon: \xmark

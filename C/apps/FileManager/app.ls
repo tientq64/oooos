@@ -83,6 +83,8 @@ App = m.comp do
       @path = event.target.value
 
    onpointerdownEnts: (event) !->
+      if event.target == event.currentTarget
+         @selEnts = []
       if event.buttons == 1
          @selData = yes
          @onpointermoveEnts event

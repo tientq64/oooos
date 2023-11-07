@@ -12,15 +12,25 @@ App = m.comp do
       @loaded = no
 
    oncreate: !->
-      os.addListener \ents (ents) !~>
-         @ent = ents?0
-         @dataUrl = void
-         @loaded = no
-         m.redraw!
-         if @ent.isFile
-            @dataUrl = await os.readFile @ent, \dataUrl
-            m.redraw!
+      os.addListener \ents @onEnts
 
+   showAppInfo: !->
+      os.alert """
+         **Tên:** ImageViewer
+
+         **Các thư viện được sử dụng:**
+         -  [@fancyapps/ui@5.0.25](https://fancyapps.com/panzoom/)
+      """,
+         isMarkdown: yes
+
+   onEnts: (ents) !->
+      @ent = ents?0
+      @dataUrl = void
+      @loaded = no
+      m.redraw!
+      if @ent.isFile
+         @dataUrl = await os.readFile @ent, \dataUrl
+         m.redraw!
       @panzoom = new Panzoom @panzoomVnode.dom,
          *  click: \toggleCover
             maxScale: 1
@@ -38,21 +48,15 @@ App = m.comp do
                   os.setFullscreen no
          *  Toolbar: Toolbar
 
-   showAppInfo: !->
-      os.alert """
-         **Tên:** ImageViewer
-
-         **Các thư viện được sử dụng:**
-         -  [@fancyapps/ui@5.0.25](https://fancyapps.com/panzoom/)
-      """,
-         isMarkdown: yes
+   onremove: !->
+      @panzoom?destroy!
 
    view: ->
       m \.column.h-100,
          m \.col-0.p-1,
             m Menubar,
                menus:
-                  *  text: "Tệp tin"
+                  *  text: "Tệp"
                      subitems:
                         *  text: "Mở hình ảnh..."
                         ,,
@@ -67,7 +71,6 @@ App = m.comp do
                            icon: \expand-wide
                            enabled: @loaded
                            click: !~>
-                              os.setFullscreen!
                               @panzoom.toggleFS!
                   *  text: "Tùy chọn"
                      subitems:
@@ -76,7 +79,7 @@ App = m.comp do
                            enabled: @loaded
                            click: !~>
                               os.setDesktopBgImagePath @ent.path
-                  *  text: "Thông tin"
+                  *  text: "Trợ giúp"
                      subitems:
                         *  text: "Thông tin ứng dụng"
                            icon: \circle-info

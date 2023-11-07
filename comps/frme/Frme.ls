@@ -101,6 +101,10 @@ class Frme extends Both
       document.dispatchEvent mouseEvent
 
    closeFrme: !->
+      setTimeout !~>
+         m.mount os.bodyEl
+         m.mount document.body
+      , 400
 
    onmouseoverGlobal: (event) !->
       if event.isTrusted
@@ -195,5 +199,8 @@ class Frme extends Both
       m \.Frme.Portal,
          class: m.class do
             "dark": @darkMode
+            "minimized": @minimized
+            "maximized": @maximized
+            "fullscreen": @fullscreen
             "Frme--useContentSize": @useContentSize
          m \.Frme-body

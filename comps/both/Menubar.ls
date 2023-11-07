@@ -25,6 +25,8 @@ Menubar = m.comp do
 
    view: ->
       m \.Menubar,
+         class: m.class do
+            "Menubar--wrap": @attrs.wrap
          @menus.map (menu) ~>
             m Button,
                key: menu.id

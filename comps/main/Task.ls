@@ -30,8 +30,8 @@ class Task extends Both
       @maxWidth$ = Number env.maxWidth ? app.maxWidth or void
       @maxHeight$ = Number env.maxHeight ? app.maxHeight or void
       @updateMaxSize!
-      @width = Number env.width ? app.width or 800
-      @height = Number env.height ? app.height or 600
+      @width = Number env.width ? app.width or 900
+      @height = Number env.height ? app.height or 640
       @updateSize!
       @x = Number env.x ? app.x ? (os.desktopWidth - @width) / 2 + @random -32 32
       @y = Number env.y ? app.y ? (os.desktopHeight - @height) / 2 + @random -32 32
@@ -46,15 +46,15 @@ class Task extends Both
       @hidden = Boolean env.hidden ? app.hidden ? @useContentSize
       @autoListen = Boolean env.autoListen ? app.autoListen ? yes
       @supportedExts = app.supportedExts
-      @openEntsSameTask = Boolean env.openEntsSameTask ? app.openEntsSameTask ? no
-      @args = env.args ? app.args ? {}
+      @openSameTask = Boolean env.openSameTask ? app.openSameTask ? no
+      @args = @castNewObj env.args ? app.args
       @perms = @createTaskPerms!
 
       @isSandbox = @type !in [\os \core]
+      @isAskingClose = no
       @closed = no
       @closedResolve = void
       @closedPromise = new Promise (@closedResolve) !~>
-      @isAskingClose = no
       @listened = no
       @listenedResolve = void
       @listenedPromise = new Promise (@listenedResolve) !~>
@@ -71,6 +71,8 @@ class Task extends Both
 
       unless @minimized
          @focus!
+
+      @sendPermTasksAll!
 
       m.redraw!
 
@@ -330,7 +332,7 @@ class Task extends Both
             hidden: pack.hidden
             autoListen: pack.autoListen
             supportedExts: @castArr pack.supportedExts
-            openEntsSameTask: pack.openEntsSameTask
+            openSameTask: pack.openSameTask
             description: pack.description
             license: pack.license
          app <<<
@@ -343,9 +345,11 @@ class Task extends Both
             await os.writeFile "#path/app.styl" styl
          await os.writeFile "#path/app.yml" yaml
          os.apps.push app
-         vapps = @getVapps!
-         @sendPermAll \appsView \apps vapps
+         @sendPermAppsAll!
       m.redraw!
+
+   getApp: (appName) ->
+      os.apps.find (.name == appName)
 
    getVapps: ->
       vapps = os.apps.map (app) ~>
@@ -362,9 +366,6 @@ class Task extends Both
       supportedExts: app.supportedExts
       description: app.description
 
-   getApp: (appName) ->
-      os.apps.find (.name == appName)
-
    createAppPerms: (app) ->
       appPerms =
          *  name: \taskbarView
@@ -377,11 +378,17 @@ class Task extends Both
             status: \ask
          *  name: \appsView
             status: \ask
-         *  name: \darkModeView
-            status: \granted
-            requested: yes
          *  name: \tasksView
             status: \ask
+         *  name: \actionsView
+            status: \granted
+            listened: yes
+         *  name: \fullscreenView
+            status: \granted
+            listened: yes
+         *  name: \darkModeView
+            status: \granted
+            listened: yes
          *  name: \entsView
             status: \ask
             paths:
@@ -396,48 +403,59 @@ class Task extends Both
                ...
       appPerms
 
-   createTaskPerms: (permsData) ->
+   createTaskPerms: ->
       taskPerms = structuredClone @app.perms
       taskPerms
 
    requestPerm: (name, val) ->
-      if taskPerm = @perms.find (.name == name)
-         {status} = taskPerm
+      if perm = @perms.find (.name == name)
+         {status} = perm
          if @admin
             status = \granted
          else
             if status == \ask
-               unless taskPerm.promise
-                  taskPerm.promise = @askTaskPerm taskPerm
+               unless perm.promise
+                  perm.promise = @askTaskPerm perm
                      .then !~>
-                        delete taskPerm.promise
-               answer = await taskPerm.promise
+                        delete perm.promise
+               answer = await perm.promise
                switch answer
                | \always \session
                   status = \granted
                | \denied
                   status = \denied
-            taskPerm.status = status
+            perm.status = status
          if status == \granted
-            taskPerm.requested = yes
-            switch name
-            | \taskbarView
-               await @promiseAllSettled do
-                  @sendPerm name, \taskbarPosition os.taskbarPosition
-                  @sendPerm name, \taskbarHeight os.taskbarHeight
-            | \desktopBgView
-               await @promiseAllSettled do
-                  @sendPerm name, \desktopBgImageDataUrl os.desktopBgImageDataUrl
-            | \appsView
-               vapps = @getVapps!
-               await @promiseAllSettled do
-                  @sendPerm name, \apps vapps
+            perm.listened = yes
+            unless perm.inited
+               perm.inited = yes
+               switch name
+               | \taskbarView
+                  await @promiseAll do
+                     @send \perm \taskbarPosition os.taskbarPosition
+                     @send \perm \taskbarHeight os.taskbarHeight
+               | \desktopBgView
+                  await @send \perm \desktopBgImageDataUrl os.desktopBgImageDataUrl
+               | \appsView
+                  vapps = @getVapps!
+                  await @send \perm \apps vapps
+               | \tasksView
+                  vtasks = @getVtasks!
+                  await @send \perm \tasks vtasks
+               | \actionsView
+                  await @promiseAll do
+                     @send \perm \minimized @minimized
+                     @send \perm \maximized @maximized
+               | \fullscreenView
+                  await @send \perm \fullscreen @fullscreen
+               | \darkModeView
+                  await @send \perm \darkMode @darkMode
       else
-         throw Error "Quyền không xác định"
+         throw Error "Tên quyền '#name' không hợp lệ"
       status
 
    send: (act, name, ...vals) ->
-      if @postMessage
+      if @postMessage and !@closed
          [mid, promise] = @addResolver!
          @postMessage do
             flow: \mfm
@@ -455,12 +473,20 @@ class Task extends Both
 
    sendPerm: (permName, name, val) ->
       perm = @perms.find (.name == permName)
-      if perm.requested
+      if perm.listened
          @send \perm name, val
 
    sendPermAll: (permName, name, val) ->
       Promise.allSettled os.tasks.map (task) ~>
-         @sendPerm permName, name, val
+         task.sendPerm permName, name, val
+
+   sendPermAppsAll: ->
+      vapps = @getVapps!
+      @sendPermAll \appsView \apps vapps
+
+   sendPermTasksAll: ->
+      vtasks = @getVtasks!
+      @sendPermAll \tasksView \tasks vtasks
 
    runTask: (name, env = {}) ->
       env.parentTask ?= @
@@ -474,6 +500,32 @@ class Task extends Both
 
    getTask: (pid) ->
       os.tasks.find (.pid == pid)
+
+   getVtasks: ->
+      vtasks = os.tasks.map (task) ~>
+         @makeVtask task
+      vtasks
+
+   makeVtask: (task) ->
+      name: task.name
+      path: task.path
+      type: task.type
+      icon: task.icon
+      author: task.author
+      pid: task.pid
+      admin: task.admin
+      title: task.title
+      isModal: task.isModal
+      focusable: task.focusable
+      skipTaskbar: task.skipTaskbar
+      hidden: task.hidden
+      autoListen: task.autoListen
+      supportedExts: task.supportedExts
+      openSameTask: task.openSameTask
+      args: task.args
+      isAskingClose: task.isAskingClose
+      closed: task.closed
+      listened: task.listened
 
    waitListenedTask: (pid) ->
       if task = os.tasks.find (.pid == pid)
@@ -530,6 +582,7 @@ class Task extends Both
       val = Boolean val ? !@minimized
       if val != @minimized
          @minimized = val
+         @sendPerm \actionsView \minimized val
          os.updateFocusedTask!
          @updateMinimizeDom!
          m.redraw!
@@ -539,12 +592,14 @@ class Task extends Both
       if val != @maximized
          @maximized = val
          @isUnmaximized = !val
+         @sendPerm \actionsView \maximized val
          m.redraw!
 
    setFullscreen: (val) !->
       val = Boolean val ? !@fullscreen
       if val != @fullscreen
          @fullscreen = val
+         @sendPerm \fullscreenView \fullscreen val
          m.redraw!
 
    fitContentSize: (width, height) !->
@@ -639,7 +694,7 @@ class Task extends Both
          m.redraw!
          isClose = await @send \ask \close
          unless isClose == no
-            await @send \call \closeFrme
+            @send \call \closeFrme
             @closed = yes
             @listened = no
             @postMessage = void
@@ -652,6 +707,7 @@ class Task extends Both
             @closedResolve = void
             index = os.tasks.indexOf @
             os.tasks.splice index, 1
+            @sendPermTasksAll!
             os.updateFocusedTask!
          @isAskingClose = no
          m.redraw!
@@ -695,7 +751,7 @@ class Task extends Both
             top: y
             width: width
             height: height
-            borderRadius: 6
+            borderRadius: 8
       else
          if @maximized
             keyframe =
@@ -710,11 +766,11 @@ class Task extends Both
                top: @y
                width: @width
                height: @height
-               borderRadius: 6
+               borderRadius: 8
       anim = @dom.animate do
          *  m.style keyframe
          *  duration: 500
-            easing: "cubic-bezier(.22, 1, .36, 1)"
+            easing: @easeOut
             fill: \forwards if @minimized
       @dom.hidden = isFirst
       if @minimized
@@ -736,6 +792,9 @@ class Task extends Both
       @tid = @randomUuid!
       @postMessage = @frameEl.contentWindow~postMessage
       tid: @tid
+      minimized: @minimized
+      maximized: @maximized
+      fullscreen: @fullscreen
       useContentSize: @useContentSize
       darkMode: @darkMode
       autoListen: @autoListen
@@ -978,11 +1037,12 @@ class Task extends Both
       @resizeData = void
 
    onbeforeremove: ->
+      @dom.classList.add \Task--closed
       anim = @dom.animate do
          *  scale: 0.9
             opacity: 0
          *  duration: 500
-            easing: "cubic-bezier(.22, 1, .36, 1)"
+            easing: @easeOut
       anim.finished
 
    view: (vnode, vdom) ->

@@ -1,5 +1,16 @@
 # CHANGELOG
 
+## [0.5.0] - 07/11/2023
+
+- Đổi tên trường `openEntsSameTask` thành `openSameTask` trong khai báo app.
+- Đổi kích thước mặc định của cửa sổ từ 800x600 sang 900x640.
+- Đổi tên app `TextArea` thành `TextEditor`.
+- Thêm app `TaskManager`.
+- App `ImageViewer`: Sửa lỗi toolbar khi toàn màn hình.
+- `Frme` và `App` bây giờ sẽ được unmount khi task đóng.
+- Thêm các quyền `tasksView`, `actionsView`, `fullscreenView`. Cũng thêm Stylus mixin `minimized`, `maximized`, `fullscreen`.
+- Thêm utility class CSS cho `scroll-behavior`.
+
 ## [0.4.0] - 06/11/2023
 
 - Viết lại toàn bộ hệ thống tin nhắn giữa main và frme. Dùng tham số `flow` và `act` thay cho `type`. Tên listener không còn dùng dấu $ đằng trước nữa. Đổi tên responder thành answerer. Listener và answerer hiện đã được tách ra riêng biệt, không còn liên quan đến nhau.

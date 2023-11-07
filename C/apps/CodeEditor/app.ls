@@ -170,7 +170,7 @@ App = m.comp do
          m \.col-0.border-b,
             m Menubar,
                menus:
-                  *  text: "Tệp tin"
+                  *  text: "Tệp"
                      subitems:
                         *  text: "Tập tin mới"
                            icon: \file
@@ -213,7 +213,8 @@ App = m.comp do
                            click: !~>
                               @editor.focus!
                               @editor.trigger \app \editor.action.clipboardPasteAction
-                        ,,
+                  *  text: "Chọn"
+                     subitems:
                         *  text: "Chọn tất cả"
                            label: "Ctrl+A"
                            enabled: @model
@@ -232,7 +233,6 @@ App = m.comp do
                         ,,
                         *  text: "Toàn màn hình"
                            icon: \expand-wide
-                           label: "F11"
                            click: !~>
                               os.setFullscreen!
                         ,,
@@ -243,7 +243,7 @@ App = m.comp do
                            icon: \colon
                            label: "Ctrl+G"
                            enabled: @model
-                  *  text: "Thông tin"
+                  *  text: "Trợ giúp"
                      subitems:
                         *  text: "Thông tin ứng dụng"
                            icon: \circle-info
@@ -260,7 +260,9 @@ App = m.comp do
                      m \.row.middle.px-3.py-1.text-6.text-gray2,
                         key: tab.id
                         class: m.class do
-                           "bg-gray1 text-white": tab == @tab
+                           "text-white": tab == @tab
+                        style: m.style do
+                           "background": \#1e1e1e if tab == @tab
                         onclick: @onclickTab.bind void tab
                         oncontextmenu: @oncontextmenuTab.bind void tab
                         m \div,

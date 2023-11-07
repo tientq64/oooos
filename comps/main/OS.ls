@@ -1,6 +1,7 @@
 class OS extends Task
    (app, env) ->
       os := @
+      osTask := @
 
       @isOS = yes
 
@@ -49,7 +50,7 @@ class OS extends Task
 
       m.redraw!
 
-      # @runTask \PDFViewer
+      @runTask \TaskManager
 
    updateDesktopSize: !->
       @desktopWidth = innerWidth
@@ -169,6 +170,8 @@ class OS extends Task
             ,,
             *  text: "Trình quản lý tác vụ"
                icon: \fad:rectangle-history
+               click: !~>
+                  os.runTask \TaskManager
 
    onclickTaskbarTask: (task, event) !->
       if os.task == task
@@ -348,10 +351,15 @@ class OS extends Task
                         basic: yes
                         icon: \wifi
                         tooltip: "Mạng|top"
-                     m Button,
-                        basic: yes
-                        icon: \volume
-                        tooltip: "Âm thanh|top"
+                     m Popover,
+                        maxWidth: 360
+                        content: ~>
+                           m \.p-3,
+                              "Tính năng này hiện chưa khả dụng, vì hiện tại không có cách nào để kiểm soát âm lượng của một trang web."
+                        m Button,
+                           basic: yes
+                           icon: \volume
+                           tooltip: "Âm thanh|top"
                      if @battery
                         m Button,
                            basic: yes

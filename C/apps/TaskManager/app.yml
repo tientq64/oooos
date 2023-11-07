@@ -1,0 +1,4 @@
+name: TaskManager
+icon: fad:rectangle-history
+admin: yes
+pinnedTaskbar: yes

@@ -1,4 +1,4 @@
-name: TextArea
+name: TextEditor
 icon: fad:pen-to-square
 admin: yes
 supportedExts: [txt, md, log]

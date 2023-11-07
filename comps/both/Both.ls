@@ -4,6 +4,9 @@ class Both
 
       @incrId = 0
       @noopFunc = !~>
+      @easeIn = "cubic-bezier(.64, 0, .78, 0)"
+      @easeOut = "cubic-bezier(.22, 1, .36, 1)"
+      @easeInOut = "cubic-bezier(.83, 0, .17, 1)"
 
       @dom = void
 

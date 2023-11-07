@@ -1,6 +1,6 @@
-{{compsM}}
-
 osTask = void
+
+{{compsM}}
 
 pack = await m.fetch \package.json \json
 
@@ -21,7 +21,5 @@ app =
    license: pack.license
 
 new OS app
-
-osTask = os
 
 m.mount document.body, os

@@ -448,6 +448,10 @@ for k, val in $nonGrayColors
    display: flex
    justify-content: flex-start
    align-items: center
+   white-space: nowrap
+
+.Menubar--wrap
+   flex-wrap: wrap
 
 .Table
    border-radius: 6px
@@ -462,6 +466,14 @@ for k, val in $nonGrayColors
 
       +dark()
          background: $gray0
+
+   tbody
+      tr
+         &.active
+            background: $gray3 !important
+
+            +dark()
+               background: $gray2 !important
 
    td, th
       height: 30px
@@ -505,7 +517,7 @@ for k, val in $nonGrayColors
 
 .Popover-popper
    width: max-content
-   border-radius: 6px
+   border-radius: 8px
    background: #fff
    box-shadow: 0 0 0 1px $gray2, $shadow
    z-index: 1020
@@ -756,6 +768,10 @@ for k, val in $nonGrayColors
    for val in 0 25 50 75 100
       .opacity-{val}
          opacity: (val / 100)
+
+   for val in auto smooth
+      .scroll-{val}
+         scroll-behavior: val
 
    for val in text all auto none
       .select-{val}

@@ -28,9 +28,10 @@
       "/C/apps/OpenWith",
       "/C/apps/PDFViewer",
       "/C/apps/Popup",
+      "/C/apps/TaskManager",
       "/C/apps/Terminal",
       "/C/apps/Test",
-      "/C/apps/TextArea"
+      "/C/apps/TextEditor"
    ],
    "/C/{*,!(apps)/**}": [
       "/C/apps",

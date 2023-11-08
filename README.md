@@ -10,7 +10,7 @@
    <img src="https://raw.githubusercontent.com/webuild-community/badge/master/svg/made.svg">
    <!-- <img src="https://img.shields.io/badge/made_in-Vietnam-crimson"> -->
    <img src="https://img.shields.io/badge/made_with-LiveScript-blue">
-   <img src="https://img.shields.io/badge/version-v0.6.0-orange">
+   <img src="https://img.shields.io/github/package-json/v/tientq64/oooos">
 </p>
 
 <p align="center">

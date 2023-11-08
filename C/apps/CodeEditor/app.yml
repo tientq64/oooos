@@ -5,4 +5,4 @@ width: 1200
 height: 800
 darkMode: yes
 supportedExts: [html, css, js, pug, styl, ls, json, yaml, yml]
-openSameTask: yes
+isOpenSameTask: yes

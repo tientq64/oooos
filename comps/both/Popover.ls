@@ -48,6 +48,7 @@ Popover = m.comp do
                   view: ~>
                      m \.Popover-content,
                         style: m.style do
+                           minWidth: @attrs.minWidth
                            maxWidth: @attrs.maxWidth
                         content
                @popper = os.createPopper @dom, popperEl,

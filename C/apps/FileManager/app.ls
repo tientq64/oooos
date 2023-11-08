@@ -211,7 +211,7 @@ App = m.comp do
                      args:
                         path: @dir.path
             ,,
-            *  text: "Thông tin chi tiết"
+            *  text: "Thông tin thư mục"
                icon: \circle-info
 
    onclickEnt: (ent, event) !->
@@ -226,6 +226,7 @@ App = m.comp do
             click: !~>
                @openEnt ent
          *  text: "Mở bằng"
+            visible: ent.isFile
             subitems:
                *  os.apps?map (app) ~>
                      if app.supportedExts.includes ent.ext
@@ -371,6 +372,9 @@ App = m.comp do
                               name: ent.icon
                               size: 32
                            m \.w-100.truncate,
-                              ent.name
+                              if ent.isShortcut
+                                 ent.name.replace /\.lnk$/ ""
+                              else
+                                 ent.name
             @selector =
                m \.absolute.border.border-blue2.bg-blue2.bg-opacity-25.pe-none.z-10

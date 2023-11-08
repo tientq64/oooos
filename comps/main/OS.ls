@@ -50,7 +50,7 @@ class OS extends Task
 
       m.redraw!
 
-      @runTask \TaskManager
+      @runTask \Test
 
    updateDesktopSize: !->
       @desktopWidth = innerWidth
@@ -110,16 +110,19 @@ class OS extends Task
          skipTaskbar: yes
          args:
             isDesktop: yes
+            path: \/C/desktop
             viewType: \desktop
       @desktopTask = @tasks.find (.pid == pid)
       await @waitListenedTask pid
       m.redraw!
 
-   updateFocusedTask: !->
-      tasks = os.tasks.toSorted (taskA, taskB) ~>
-         taskA.z - taskB.z
-      for task, i in tasks
-         task.z = i
+   updateFocusedTask: (isSort) !->
+      tasks = os.tasks
+      if isSort
+         tasks .= toSorted (taskA, taskB) ~>
+            taskA.z - taskB.z
+         for task, i in tasks
+            task.z = i
       @task = tasks.findLast (task) ~>
          task.focusable and !task.minimized
       m.redraw!
@@ -127,9 +130,10 @@ class OS extends Task
    getTaskbarPinnedAppsAndTasks: ->
       pinnedApps = os.apps
          .filter (app) ~>
-            app.pinnedTaskbar and !app.skipTaskbar
+            app.pinnedTaskbar
          .map (app) ~>
-            task = os.tasks.find (.app == app)
+            task = os.tasks.find (task2) ~>
+               task2.app == app and !task2.skipTaskbar
             task or app
       tasks = os.tasks
          .filter (task) ~>
@@ -299,15 +303,25 @@ class OS extends Task
                            else
                               m Popover,
                                  key: item.pid
+                                 minWidth: 200
                                  interactionKind: \contextmenu
                                  content: (close) ~>
                                     m Menu,
-                                       style:
-                                          width: 200
                                        basic: yes
                                        items:
                                           *  header: item.name
-                                          *  text: "Đóng"
+                                          *  text: "Mở tác vụ mới"
+                                             icon: item.icon
+                                             hidden: item.isOpenSameTask
+                                             click: !~>
+                                                close!
+                                                os.runTask item.name
+                                          ,,
+                                          *  text: "Bỏ ghim taskbar"
+                                             icon: \thumbtack
+                                             click: !~>
+                                                close!
+                                          *  text: "Đóng tác vụ"
                                              icon: \xmark
                                              color: \red
                                              click: !~>
@@ -323,20 +337,20 @@ class OS extends Task
                         else
                            m Popover,
                               key: item.path
+                              minWidth: 200
                               interactionKind: \contextmenu
                               content: (close) ~>
                                  m Menu,
-                                    style:
-                                       width: 200
                                     basic: yes
                                     items:
                                        *  header: item.name
                                        *  text: "Mở"
+                                          icon: item.icon
                                           click: !~>
                                              close!
                                              @runTask item.name
                                        ,,
-                                       *  text: "Bỏ ghim"
+                                       *  text: "Bỏ ghim taskbar"
                                           icon: \thumbtack
                                           click: !~>
                                              close!

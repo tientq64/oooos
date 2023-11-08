@@ -8,8 +8,9 @@
 
 <p align="center">
    <img src="https://raw.githubusercontent.com/webuild-community/badge/master/svg/made.svg">
+   <!-- <img src="https://img.shields.io/badge/made_in-Vietnam-crimson"> -->
    <img src="https://img.shields.io/badge/made_with-LiveScript-blue">
-   <img src="https://img.shields.io/github/package-json/v/tientq64/oooos">
+   <img src="https://img.shields.io/badge/version-v0.6.0-orange">
 </p>
 
 <p align="center">
@@ -18,11 +19,11 @@
 
 ## Giới thiệu
 
-`OooOS` là hệ điều hành web đơn giản chỉ chạy trên trình duyệt. Được viết bằng `LiveScript` và `Stylus`, sử dụng JS framework `Mithril`.
+`OooOS` là hệ điều hành web chạy trên trình duyệt. Được viết bằng `LiveScript` và `Stylus`, sử dụng JS framework `Mithril`.
 
 ## Cài đặt
 
-Không có bước cài đặt, chỉ cần truy cập [trang web này](https://oooos.vercel.app) bằng trình duyệt là có thể bắt đầu sử dụng.
+Không có bước cài đặt, chỉ cần truy cập [trang web này](https://oooos.vercel.app).
 
 ## Tính năng
 
@@ -30,4 +31,4 @@ Bao gồm các tính năng cơ bản của hệ điều hành. Tuy nhiên một 
 
 ## Trình duyệt hỗ trợ
 
-Hiện tại chỉ hỗ trợ các hệ điều hành nhân chromium như `Edge`, `Chrome`, `Opera`, vv. `Firefox` không (hoặc chưa) được hỗ trợ. Lý do bởi OooOS dùng [FileSystem API](https://developer.mozilla.org/en-US/docs/Web/API/FileSystem) làm hệ thống tập tin.
+Hiện tại chỉ hỗ trợ các trình duyệt nhân chromium như `Edge`, `Chrome`, `Opera`, vv. `Firefox` không được hỗ trợ vì OooOS dùng các web API như [FileSystem API](https://developer.mozilla.org/en-US/docs/Web/API/FileSystem), [Battery Status API](https://developer.mozilla.org/en-US/docs/Web/API/Battery_Status_API), Firefox không hỗ trợ các web API đó.

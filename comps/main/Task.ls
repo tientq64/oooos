@@ -46,7 +46,7 @@ class Task extends Both
       @hidden = Boolean env.hidden ? app.hidden ? @useContentSize
       @autoListen = Boolean env.autoListen ? app.autoListen ? yes
       @supportedExts = app.supportedExts
-      @openSameTask = Boolean env.openSameTask ? app.openSameTask ? no
+      @isOpenSameTask = Boolean app.isOpenSameTask ? no
       @args = @castNewObj env.args ? app.args
       @perms = @createTaskPerms!
 
@@ -58,6 +58,7 @@ class Task extends Both
       @listened = no
       @listenedResolve = void
       @listenedPromise = new Promise (@listenedResolve) !~>
+      @z = 0
       @moving = no
       @resizeData = void
       @isUnmaximized = no
@@ -86,60 +87,63 @@ class Task extends Both
       @updateXYDom!
       @updateMinimizeDom yes if @minimized
 
-      unless @isOS
-         switch @type
-         | \core
-            styl = ""
-            try
-               styl = await os.readFile "#@path/app.styl"
-            styl = stylus.render styl,
-               compress: yes
-            @stylEl.textContent = styl
-            code = await os.readFile "#@path/app.ls"
-            code = """
-               (App, os) ->
-                  #{@indent code, 1 yes}
-                  App
-            """
-            code = livescript.compile code,
-               bare: yes
-            frameEl = document.createElement \div
-            frameEl.className = \Task-frame
-            @frameEl = frameEl
-            @bodyEl.appendChild frameEl
-            comp = (eval code) void @
-            m.mount frameEl, comp
+      switch @type
+      | \os
+         @loaded = yes
 
-         else
-            importVar = eval importVarCode
-            styl = ""
-            try
-               styl = await os.readFile "#@path/app.styl"
-            styl = importVar stylF
-            styl = importVar stylB
-            styl = stylus.render styl,
-               compress: yes
-            code = await os.readFile "#@path/app.ls"
-            code = importVar codeF
-            code = importVar codeB
-            code = livescript.compile code
-            html = importVar htmlF
-            html .= replace /<!-- Code injected by live-server -->.+<\/script>/s ""
-            frameEl = document.createElement \iframe
-            frameEl.className = \Task-frame
-            @frameEl = frameEl
-            @bodyEl.appendChild frameEl
-            frameEl.sandbox = """
-               allow-downloads
-               allow-forms
-               allow-orientation-lock
-               allow-pointer-lock
-               allow-scripts
-            """
-            frameEl.allow = "
-               clipboard-read;
-            "
-            frameEl.srcdoc = html
+      | \core
+         styl = ""
+         try
+            styl = await os.readFile "#@path/app.styl"
+         styl = stylus.render styl,
+            compress: yes
+         @stylEl.textContent = styl
+         code = await os.readFile "#@path/app.ls"
+         code = """
+            (App, os) ->
+               #{@indent code, 1 yes}
+               App
+         """
+         code = livescript.compile code,
+            bare: yes
+         frameEl = document.createElement \div
+         frameEl.className = \Task-frame
+         @frameEl = frameEl
+         @bodyEl.prepend frameEl
+         comp = (eval code) void @
+         m.mount frameEl, comp
+         @loaded = yes
+
+      | \normal
+         importVar = eval importVarCode
+         styl = ""
+         try
+            styl = await os.readFile "#@path/app.styl"
+         styl = importVar stylF
+         styl = importVar stylB
+         styl = stylus.render styl,
+            compress: yes
+         code = await os.readFile "#@path/app.ls"
+         code = importVar codeF
+         code = importVar codeB
+         code = livescript.compile code
+         html = importVar htmlF
+         html .= replace /<!-- Code injected by live-server -->.+<\/script>/s ""
+         frameEl = document.createElement \iframe
+         frameEl.className = \Task-frame
+         @frameEl = frameEl
+         @bodyEl.prepend frameEl
+         frameEl.sandbox = """
+            allow-downloads
+            allow-forms
+            allow-orientation-lock
+            allow-pointer-lock
+            allow-scripts
+         """
+         frameEl.allow = "
+            clipboard-read;
+         "
+         frameEl.srcdoc = html
 
       m.redraw!
 
@@ -147,16 +151,21 @@ class Task extends Both
       @noHeader or @fullscreen
 
    getEntIcon: (ent) ->
-      {ext, name, path} = ent
-      if ent.isFile
-         if name == \app.yml
-            dirPath = @dirPath path
-            if app = os.apps.find (.path == dirPath)
+      if ent.isShortcut
+         try
+            ent = await os.resolveShortcut ent
+            @getEntIcon ent
+         catch
+            \file-exclamation
+      else if ent.isFile
+         if ent.name == \app.yml
+            dirname = @dirPath ent.path
+            if app = os.apps.find (.path == dirname)
                app.icon
             else
                \file-dashed-line
          else
-            match ext
+            match ent.ext
             | /^(txt|md|log)$/
                \file-lines
             | /^(jsx?|tsx?|ls|coffee|css|styl|s[ac]ss|less|html?|pug|json|csv|xml)$/
@@ -169,12 +178,14 @@ class Task extends Both
                \file-video
             | /^(zip|rar|tar|7z)$/
                \file-zipper
+            | /^(gb)$/
+               \file-binary
             | /^(pdf)$/
                \file-pdf
             else
                \file
       else
-         switch path
+         switch ent.path
          | \/C/images
             \folder-image!f59e0b
          else
@@ -203,6 +214,9 @@ class Task extends Both
          size: stat.size
       if ent.isFile
          ent.ext = @extPath ent.name
+         ent.isShortcut = ent.ext == \lnk
+      else
+         ent.isShortcut = no
       ent.icon = await @getEntIcon ent
       if children
          ent.children = await Promise.all children.map (@makeEnt <|)
@@ -237,7 +251,7 @@ class Task extends Both
       @makeEnt ent
 
    openEnt: (ent, appName) !->
-      ent = await @castEnt ent
+      ent = await os.resolveShortcut ent
       if appName
          if app = @getApp appName
             pid = os.runTask app.name
@@ -264,7 +278,7 @@ class Task extends Both
 
    openWithEnt: (ent) !->
       if app = await @pickOpenWithVappByEnt ent
-         @openEnt ent, app.name
+         await @openEnt ent, app.name
 
    createDir: (path) ->
       dir = await fs.mkdir path
@@ -299,6 +313,41 @@ class Task extends Both
       result = await fs.unlink path
       result == void
 
+   makeShortcut: (data) ->
+      data = @castNewObj data, \targetPath
+      shortcut =
+         targetPath: String data.targetPath
+      shortcut.icon and= String data.icon ? ""
+      shortcut
+
+   parseShortcut: (text) ->
+      data = jsyaml.safeLoad text
+      @makeShortcut data
+
+   dumpShortcut: (shortcut) ->
+      jsyaml.safeDump shortcut
+
+   createShortcut: (path, data) ->
+      ext = @extPath path
+      unless ext == \lnk
+         path = "#path.lnk"
+      shortcut = @makeShortcut data
+      text = @dumpShortcut shortcut
+      ent = await @writeFile path, text
+      ent
+
+   resolveShortcut: (path, count) ->
+      count = Number count ? 16
+      count = 16 if isNaN count or count > 16
+      if count <= 0
+         throw Error "Shortcut quá nhiều cấp lồng nhau"
+      ent = await @castEnt path
+      if ent.isShortcut
+         text = await @readFile ent
+         shortcut = await @parseShortcut text
+         ent = await @resolveShortcut shortcut.targetPath, count - 1
+      ent
+
    installApp: (installType, sourcePath, path, env = {}) !->
       switch installType
       | \boot
@@ -332,11 +381,12 @@ class Task extends Both
             hidden: pack.hidden
             autoListen: pack.autoListen
             supportedExts: @castArr pack.supportedExts
-            openSameTask: pack.openSameTask
+            isOpenSameTask: pack.isOpenSameTask
             description: pack.description
             license: pack.license
          app <<<
             pinnedTaskbar: env.pinnedTaskbar ? pack.pinnedTaskbar
+            isCreateShortcut: env.isCreateShortcut ? pack.isCreateShortcut ? yes
             perms: os.createAppPerms app
          code = await m.fetch "#sourcePath/app.ls"
          await os.writeFile "#path/app.ls" code
@@ -344,6 +394,8 @@ class Task extends Both
             styl = await m.fetch "#sourcePath/app.styl"
             await os.writeFile "#path/app.styl" styl
          await os.writeFile "#path/app.yml" yaml
+         if app.isCreateShortcut
+            await os.createShortcut "/C/desktop/#{app.name}.lnk" "#path/app.yml"
          os.apps.push app
          @sendPermAppsAll!
       m.redraw!
@@ -489,13 +541,26 @@ class Task extends Both
       @sendPermAll \tasksView \tasks vtasks
 
    runTask: (name, env = {}) ->
-      env.parentTask ?= @
       app = os.apps.find (.name == name)
-      if app
-         task = new Task app, env
-         m.redraw!
-      else
+      unless app
+         ent = @resolveShortcut name
+         if ent.isDir
+            throw Error "Đường dẫn '#name' là thư mục"
+         if ent.name != \app.yml
+            throw Error "Đường dẫn '#name' không phải là tập tin app.yml"
+         path = @dirPath ent.path
+         app = os.apps.find (.path == path)
+         unless app
+            throw Error "Không tìm thấy ứng dụng với đường dẫn '#name'"
+      unless app
          throw Error "Không tìm thấy ứng dụng '#name'"
+      env.parentTask ?= @
+      env.isOpenSameTask = Boolean env.isOpenSameTask ? app.isOpenSameTask
+      if app.isOpenSameTask and env.isOpenSameTask
+         if task = os.tasks.find (.app == app)
+            task.focus!
+      task ?= new Task app, env
+      m.redraw!
       task.pid
 
    getTask: (pid) ->
@@ -517,15 +582,21 @@ class Task extends Both
       title: task.title
       isModal: task.isModal
       focusable: task.focusable
+      minimized: task.minimized
+      maximized: task.maximized
+      fullscreen: task.fullscreen
       skipTaskbar: task.skipTaskbar
       hidden: task.hidden
       autoListen: task.autoListen
       supportedExts: task.supportedExts
-      openSameTask: task.openSameTask
+      isOpenSameTask: task.isOpenSameTask
+      pinnedTaskbar: task.pinnedTaskbar
+      isCreateShortcut: task.isCreateShortcut
       args: task.args
       isAskingClose: task.isAskingClose
       closed: task.closed
       listened: task.listened
+      z: task.z
 
    waitListenedTask: (pid) ->
       if task = os.tasks.find (.pid == pid)
@@ -538,6 +609,10 @@ class Task extends Both
    sendTask: (pid, act, name, ...vals) ->
       if task = @getTask pid
          task.send act, name, ...vals
+
+   focusTask: (pid) !->
+      if task = @getTask pid
+         await task.focus!
 
    closeTask: (pid, val) !->
       if task = @getTask pid
@@ -563,8 +638,9 @@ class Task extends Both
             if @isModal and @parentTask
                @parentTask.focus yes
             @z = os.tasks.length
+            @sendPermTasksAll!
             @minimize no
-            os.updateFocusedTask!
+            os.updateFocusedTask yes
             @focusModals! unless skipFocusModals
       else
          os.task = void
@@ -583,6 +659,7 @@ class Task extends Both
       if val != @minimized
          @minimized = val
          @sendPerm \actionsView \minimized val
+         @sendPermTasksAll!
          os.updateFocusedTask!
          @updateMinimizeDom!
          m.redraw!
@@ -593,6 +670,7 @@ class Task extends Both
          @maximized = val
          @isUnmaximized = !val
          @sendPerm \actionsView \maximized val
+         @sendPermTasksAll!
          m.redraw!
 
    setFullscreen: (val) !->
@@ -600,6 +678,7 @@ class Task extends Both
       if val != @fullscreen
          @fullscreen = val
          @sendPerm \fullscreenView \fullscreen val
+         @sendPermTasksAll!
          m.redraw!
 
    fitContentSize: (width, height) !->
@@ -634,6 +713,7 @@ class Task extends Both
    show: !->
       if @hidden
          @hidden = no
+         @sendPermTasksAll!
          if @loaded == 0
             @loaded = yes
          m.redraw!
@@ -691,6 +771,7 @@ class Task extends Both
    close: (val) !->
       if !@closed and !@isAskingClose
          @isAskingClose = yes
+         @sendPermTasksAll!
          m.redraw!
          isClose = await @send \ask \close
          unless isClose == no
@@ -710,6 +791,7 @@ class Task extends Both
             @sendPermTasksAll!
             os.updateFocusedTask!
          @isAskingClose = no
+         @sendPermTasksAll!
          m.redraw!
 
    updateMinSize: !->
@@ -826,6 +908,7 @@ class Task extends Both
          @listened = yes
          @listenedResolve val
          @listenedResolve = void
+         @sendPermTasksAll!
 
    showMenu: (rect, items, isAddFrameXY, popperClassName, popperOpts) ->
       resolve = void
@@ -1038,6 +1121,7 @@ class Task extends Both
 
    onbeforeremove: ->
       @dom.classList.add \Task--closed
+      @dom.inert = yes
       anim = @dom.animate do
          *  scale: 0.9
             opacity: 0
@@ -1055,9 +1139,10 @@ class Task extends Both
             "Task--unmaximized": @isUnmaximized
             "Task--fullscreen": @fullscreen
             "Task--noHeader": @getNoHeader!
+            "Task--loading": !@loaded
          style: m.style do
             zIndex: @z
-         inert: @closed or @minimized
+         inert: @minimized
          m \.Task-header,
             inert: @getNoHeader!
             m \.Task-title,
@@ -1092,6 +1177,14 @@ class Task extends Both
             if vdom
                m \.Task-frame,
                   vdom
+            unless @loaded
+               m \.Task-loading,
+                  m Icon,
+                     class: "Task-loadingIcon"
+                     name: @icon
+                     size: 64
+                  m \div,
+                     @name
          m \style.Task-styl
          if !@maximized and !@fullscreen
             m \.Task-resizes,

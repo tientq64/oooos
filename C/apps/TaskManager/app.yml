@@ -1,4 +1,5 @@
 name: TaskManager
 icon: fad:rectangle-history
 admin: yes
+width: 920
 pinnedTaskbar: yes

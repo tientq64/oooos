@@ -12,7 +12,26 @@ App = m.comp do
       @loaded = no
 
    oncreate: !->
+      @initPanzoom!
       os.addListener \ents @onEnts
+
+   initPanzoom: !->
+      @panzoom = new Panzoom @panzoomVnode.dom,
+         *  click: \toggleCover
+            maxScale: 1
+            on:
+               afterLoad: !~>
+                  @loaded = yes
+                  m.redraw!
+               error: !~>
+                  @loaded = no
+                  os.setFullscreen no
+                  m.redraw!
+               enterFS: !~>
+                  os.setFullscreen yes
+               exitFS: !~>
+                  os.setFullscreen no
+         *  Toolbar: Toolbar
 
    showAppInfo: !->
       os.alert """
@@ -31,25 +50,10 @@ App = m.comp do
       if @ent.isFile
          @dataUrl = await os.readFile @ent, \dataUrl
          m.redraw!
-      @panzoom = new Panzoom @panzoomVnode.dom,
-         *  click: \toggleCover
-            maxScale: 1
-            on:
-               afterLoad: !~>
-                  @loaded = yes
-                  m.redraw!
-               error: !~>
-                  @loaded = no
-                  os.setFullscreen no
-                  m.redraw!
-               enterFS: !~>
-                  os.setFullscreen yes
-               exitFS: !~>
-                  os.setFullscreen no
-         *  Toolbar: Toolbar
+      @panzoom.updateMetrics!
 
    onremove: !->
-      @panzoom?destroy!
+      @panzoom.destroy!
 
    view: ->
       m \.column.h-100,

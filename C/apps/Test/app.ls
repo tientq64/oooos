@@ -28,8 +28,9 @@ App = m.comp do
                *  text: "भारतीय भाषा"
          *  text: "Chia sẻ"
             subitems:
-               *  header: "Tiêu đề theo sau dấu phân cách"
+               *  header: "Tiêu đề theo sau dấu phân cách rồi đến header"
                ,,
+               *  header: ""
                *  text: "Mạng xã hội"
                   subitems:
                      *  text: "Facebook"

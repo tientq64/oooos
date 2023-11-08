@@ -44,6 +44,16 @@ App = m.comp do
 
    tasks: ->
       await os.requestPerm \tasksView
+      @makeTable do
+         *  "Tên"
+            "Pid"
+            "Loại"
+            "Đường dẫn"
+         os.tasks.map (task) ~>
+            *  task.name
+               task.pid
+               task.type
+               task.path
 
    exit: (val) ->
       os.close val

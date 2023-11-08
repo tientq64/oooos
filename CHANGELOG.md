@@ -1,5 +1,16 @@
 # CHANGELOG
 
+## [0.6.0] - 08/11/2023
+
+- Đổi tên trường `openSameTask` thành `isOpenSameTask` trong khai báo app.
+- Thêm tính năng shortcut. Cũng đổi thư mục hiển thị của desktop thành "/C/desktop".
+- App bây giờ sẽ vẫn được ghim ở taskbar nếu task thuộc app đó đang chạy với `skipTaskbar`.
+- Hàm `Task::runTask` bây giờ hỗ trợ cả chạy với đường dẫn tập tin `app.yml`, nhưng vẫn ưu tiên tên app nếu tìm thấy, validate đường dẫn luôn. Cũng kiểm tra nếu `isOpenSameTask` thì không mở task mới, mà tập trung vào task hiện tại nếu có.
+- Thêm màn hình loading khi task đang được load khi chạy, gồm icon và tên app.
+- Fix app `OpenWith` khi không nhận được tập tin sẽ bị lỗi.
+- Data phía frme nhận được khi gọi hàm `Frme::initTaskFrme` bây giờ sẽ được assign hết vào biến `os`, không viết thủ công nữa.
+- Hàm `Both::formatMenuItems`, divider bây giờ sẽ bị xóa nếu có header phía trên, thay vì xóa header như trước. Nếu muốn tạo divider tách ra khỏi header đó, hãy tạo header với giá trị là chuỗi trống.
+
 ## [0.5.0] - 07/11/2023
 
 - Đổi tên trường `openEntsSameTask` thành `openSameTask` trong khai báo app.

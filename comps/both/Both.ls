@@ -227,9 +227,9 @@ class Both
          if typeof! item == \Object
             id = item.id ? "#parentId:#i"
             if item.divider
-               newItem = item
-               if prevItem
-                  if prevItem.divider or prevItem.isHeader
+               if prevItem and !prevItem.isHeader
+                  newItem = item
+                  if prevItem.divider
                      newItems.pop!
             else if item.beginGroup
                openingGroups.add that
@@ -273,7 +273,7 @@ class Both
       if firstItem and firstItem.divider
          newItems.shift!
       lastItem = newItems.at -1
-      if (lastItem) and (lastItem.divider or lastItem.isHeader)
+      if lastItem and (lastItem.divider or lastItem.isHeader)
          newItems.pop!
       if newItems.length == 0
          newItems = void

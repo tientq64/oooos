@@ -15,6 +15,12 @@ App = m.comp do
                      os.close!
          *  text: "Chọn"
             subitems:
+               *  text: "Tập trung vào tác vụ đã chọn"
+                  icon: \bullseye-pointer
+                  enabled: @task
+                  click: !~>
+                     os.focusTask @task.pid
+               ,,
                *  text: "Đóng tác vụ đã chọn"
                   icon: \xmark
                   color: \red
@@ -22,7 +28,7 @@ App = m.comp do
                   click: !~>
                      os.closeTask @task.pid
 
-   onclickTasks: (event) !->
+   onmousedownTasks: (event) !->
       if event.target == event.currentTarget
          @task = void
 
@@ -31,6 +37,11 @@ App = m.comp do
 
    oncontextmenuTask: (task, event) !->
       await os.addContextMenu event,
+         *  text: "Tập trung vào tác vụ"
+            icon: \bullseye-pointer
+            click: !~>
+               os.focusTask task.pid
+         ,,
          *  text: "Đóng tác vụ"
             icon: \xmark
             color: \red
@@ -44,7 +55,7 @@ App = m.comp do
             m Menubar,
                menus: @getMenubarMenus!
          m \.col,
-            onclick: @onclickTasks
+            onmousedown: @onmousedownTasks
             m Table,
                class: "max-h-100"
                striped: yes
@@ -57,12 +68,16 @@ App = m.comp do
                         "Tên"
                      m \th.col-1,
                         "Pid"
-                     m \th.col-2,
+                     m \th.col-1,
                         "Loại"
+                     m \th.col-4,
+                        "Đường dẫn"
                      m \th.col-1,
                         "Admin"
-                     m \th.col-5,
-                        "Đường dẫn"
+                     m \th.col-1,
+                        "Ẩn"
+                     m \th.col-1,
+                        "Z"
                m \tbody,
                   os.tasks?map (task) ~>
                      m \tr,
@@ -80,6 +95,10 @@ App = m.comp do
                         m \td,
                            task.type
                         m \td,
+                           task.path
+                        m \td,
                            String task.admin
                         m \td,
-                           task.path
+                           String task.hidden
+                        m \td,
+                           task.z

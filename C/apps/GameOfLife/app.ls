@@ -70,7 +70,7 @@ App = m.comp do
             dx = atom.x - atom2.x
             dy = atom.y - atom2.y
             d = Math.sqrt dx * dx + dy * dy
-            if d > 0 and d < 160
+            if d > 0 and d < os.random 80 160
                f = g * 1 / d
                fx += f * dx
                fy += f * dy

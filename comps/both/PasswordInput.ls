@@ -38,6 +38,8 @@ PasswordInput = m.comp do
                autoFocus: @attrs.autoFocus
                placeholder: @attrs.placeholder
                value: @attrs.value
+               icon: @attrs.icon
+               rightIcon: @attrs.rightIcon
                onchange: @attrs.onchange
                oncontextmenu: @oncontextmenuTextInput
          m Button,

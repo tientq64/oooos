@@ -1,7 +1,7 @@
 App = m.comp do
    oninit: !->
       @ent = os.args.ent
-      @vapps = osTask.getVapps!
+      @vapps = osTask.getVapps!filter (.supportedExts.length)
       @appName = void
 
    oncreate: !->

@@ -55,7 +55,7 @@ TextInput = m.comp do
          style: m.style do
             @attrs.style
          tooltip: @attrs.tooltip
-         if @attrs.icon
+         if @attrs.icon?
             m Icon,
                class: "TextInput-icon TextInput-leftIcon"
                name: @attrs.icon
@@ -76,7 +76,7 @@ TextInput = m.comp do
                value: @attrs.value
                oninput: @oninputInput
                oncontextmenu: @oncontextmenuInput
-         if @attrs.rightIcon
+         if @attrs.rightIcon?
             m Icon,
                class: "TextInput-icon TextInput-rightIcon"
                name: @attrs.rightIcon

@@ -63,6 +63,7 @@ Textarea = m.comp do
          pattern: @attrs.pattern
          required: @attrs.required
          placeholder: @attrs.placeholder
+         tooltip: @attrs.tooltip
          oninput: @oninput
          oncontextmenu: @oncontextmenuInput
          value: @attrs.value

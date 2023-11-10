@@ -1,8 +1,10 @@
 App = m.comp do
    oninit: !->
       @task = void
+      @lastUpdatedTime = Date.now!
 
    oncreate: !->
+      os.addListener \tasks @onTasks
       os.requestPerm \tasksView
 
    getMenubarMenus: ->
@@ -27,6 +29,9 @@ App = m.comp do
                   enabled: @task and @task.type != \os
                   click: !~>
                      os.closeTask @task.pid
+
+   onTasks: !->
+      @lastUpdatedTime = Date.now!
 
    onmousedownTasks: (event) !->
       if event.target == event.currentTarget
@@ -102,3 +107,6 @@ App = m.comp do
                            String task.hidden
                         m \td,
                            task.z
+         m \.col-0.row,
+            m \.col-0,
+               "Thời gian cập nhật lần cuối: #{dayjs @lastUpdatedTime .format "HH:mm:ss.SSS"}"

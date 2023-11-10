@@ -88,9 +88,6 @@ class Task extends Both
       @updateMinimizeDom yes if @minimized
 
       switch @type
-      | \os
-         @loaded = yes
-
       | \core
          styl = ""
          try
@@ -131,8 +128,6 @@ class Task extends Both
          html .= replace /<!-- Code injected by live-server -->.+<\/script>/s ""
          frameEl = document.createElement \iframe
          frameEl.className = \Task-frame
-         @frameEl = frameEl
-         @bodyEl.prepend frameEl
          frameEl.sandbox = """
             allow-downloads
             allow-forms
@@ -144,6 +139,8 @@ class Task extends Both
             clipboard-read;
          "
          frameEl.srcdoc = html
+         @frameEl = frameEl
+         @bodyEl.prepend frameEl
 
       m.redraw!
 
@@ -484,10 +481,15 @@ class Task extends Both
                switch name
                | \taskbarView
                   await @promiseAll do
+                     @send \perm \taskbarPositions os.taskbarPositions
                      @send \perm \taskbarPosition os.taskbarPosition
                      @send \perm \taskbarHeight os.taskbarHeight
                | \desktopBgView
-                  await @send \perm \desktopBgImageDataUrl os.desktopBgImageDataUrl
+                  await @promiseAll do
+                     @send \perm \desktopBgImageFits os.desktopBgImageFits
+                     @send \perm \desktopBgImageFit os.desktopBgImageFit
+                     @send \perm \desktopBgImagePath os.desktopBgImagePath
+                     @send \perm \desktopBgImageDataUrl os.desktopBgImageDataUrl
                | \appsView
                   vapps = @getVapps!
                   await @send \perm \apps vapps
@@ -619,9 +621,21 @@ class Task extends Both
          await task.close val
 
    setTaskbarPosition: (val) !->
-      unless os.taskbarPosition == val
-         os.taskbarPosition = val
-         @sendPermAll \taskbarView \taskbarPosition val
+      if os.taskbarPosition == val
+         return
+      unless os.taskbarPositions.some (.value == val)
+         throw TypeError "Giá trị taskbarPosition '#val' không hợp lệ"
+      os.taskbarPosition = val
+      @sendPermAll \taskbarView \taskbarPosition val
+      m.redraw!
+
+   setDesktopBgImageFit: (val) !->
+      if os.desktopBgImageFit == val
+         return
+      unless os.desktopBgImageFits.some (.value == val)
+         throw TypeError "Giá trị desktopBgImageFit '#val' không hợp lệ"
+      os.desktopBgImageFit = val
+      @sendPermAll \desktopBgView \desktopBgImageFit val
       m.redraw!
 
    setDesktopBgImagePath: (path) !->
@@ -629,6 +643,7 @@ class Task extends Both
       dataUrl = await os.readFile path, \dataUrl
       os.desktopBgImagePath = path
       os.desktopBgImageDataUrl = dataUrl
+      @sendPermAll \desktopBgView \desktopBgImagePath path
       @sendPermAll \desktopBgView \desktopBgImageDataUrl dataUrl
       m.redraw!
 
@@ -910,7 +925,7 @@ class Task extends Both
          @listenedResolve = void
          @sendPermTasksAll!
 
-   showMenu: (rect, items, isAddFrameXY, popperClassName, popperOpts) ->
+   showMenu: (rect, items, hasValueAttr, value, isAddFrameXY, popperClassName, popperOpts) ->
       resolve = void
       if isAddFrameXY
          @addRectXYByFrameEl rect
@@ -925,8 +940,10 @@ class Task extends Both
       m.mount popperEl,
          view: ~>
             m Menu,
-               isSubmenu: yes
+               activeItemClass: "bg-blue2 text-white"
                basic: yes
+               isSubmenu: yes
+               value: if hasValueAttr => value else m.DELETE
                items: items
                onSubmenuItemClick: (item) !~>
                   close item
@@ -947,8 +964,8 @@ class Task extends Both
          resolve := resolve2
       [close, promise]
 
-   showSubmenuMenu: (rect, items, isAddFrameXY) ->
-      [close, promise] = @showMenu rect, items, isAddFrameXY, \OS-submenuMenu,
+   showSubmenuMenu: (rect, items, hasValueAttr, value, isAddFrameXY) ->
+      [close, promise] = @showMenu rect, items, hasValueAttr, value, isAddFrameXY, \OS-submenuMenu,
          placement: \right-start
          offset: [-4 -2]
       os.submenuMenuClose = close
@@ -962,7 +979,7 @@ class Task extends Both
    showContextMenu: (x, y, items, isAddFrameXY) ->
       @closeContextMenu!
       rect = @makeRectFromXY x, y
-      [close, promise] = @showMenu rect, items, isAddFrameXY, \OS-contextMenu,
+      [close, promise] = @showMenu rect, items,,, isAddFrameXY, \OS-contextMenu,
          placement: \bottom-start
          flips: [\top-start]
       os.contextMenuClose = close
@@ -974,7 +991,7 @@ class Task extends Both
          os.contextMenuClose = void
 
    showMenubarMenu: (rect, items, isAddFrameXY) ->
-      [close, promise] = @showMenu rect, items, isAddFrameXY, \OS-menubarMenu,
+      [close, promise] = @showMenu rect, items,,, isAddFrameXY, \OS-menubarMenu,
          placement: \bottom-start
          flips: [\right-start]
       os.menubarMenuClose = close
@@ -984,6 +1001,18 @@ class Task extends Both
       if os.menubarMenuClose
          os.menubarMenuClose!
          os.menubarMenuClose = void
+
+   showSelectMenu: (rect, items, value, isAddFrameXY) ->
+      [close, promise] = @showMenu rect, items, yes value, isAddFrameXY, \OS-selectMenu,
+         placement: \bottom
+         flips: [\top]
+      os.selectMenuClose = close
+      promise
+
+   closeSelectMenu: !->
+      if os.selectMenuClose
+         os.selectMenuClose!
+         os.selectMenuClose = void
 
    showTooltip: (rect, text, isDark, isAddFrameXY) !->
       if text.trim!

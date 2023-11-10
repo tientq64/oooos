@@ -211,6 +211,7 @@ class Both
       newItems = []
       clicks = {}
       newGroups = {}
+      allItems = []
       prevItem = void
       openingGroups = new Set
       items = @castArr items
@@ -255,10 +256,11 @@ class Both
                if \enabled of item and !newItem.disabled
                   newItem.disabled = !item.enabled
                if item.subitems
-                  [subitems, subclicks] = @formatMenuItems item.subitems, id
+                  [subitems, subclicks,, subAllItems] = @formatMenuItems item.subitems, id
                   if subitems
                      newItem.subitems = subitems
                      clicks <<< subclicks
+                  allItems.push ...subAllItems
                else if item.click
                   clicks[id] = item.click
          if newItem
@@ -268,6 +270,7 @@ class Both
             openingGroups.forEach (groupName) !~>
                newGroups[][groupName]push newItem
             newItems.push newItem
+            allItems.push newItem
             prevItem = newItem
       firstItem = newItems.0
       if firstItem and firstItem.divider
@@ -277,7 +280,7 @@ class Both
          newItems.pop!
       if newItems.length == 0
          newItems = void
-      [newItems, clicks, newGroups]
+      [newItems, clicks, newGroups, allItems]
 
    formatMenus: (menus) ->
       newMenus = []
@@ -302,18 +305,18 @@ class Both
             placements.every (in ["" \left \top \right \bottom \auto]) and
             placements.length == @uniqueNewArr placements .length
          then
-            placements .= map (or \auto)
-            unless placements.includes \auto
-               placements.push \auto
+            placements = @uniqueNewArr placements.map (or \auto)
             text .= substring 0 index
          else
             placements = [\auto]
       [text, placements]
 
-   createHist: (items, max) ->
+   createHist: (items, max, duplicate, redraw) ->
       items = @castNewArr items
       hist =
          max: max or 1000
+         duplicate: Boolean duplicate
+         redraw: Boolean redraw
          items: items
          index: items.length - 1
          goto: (index) ~>
@@ -326,24 +329,89 @@ class Both
          forward: ~>
             hist.goto hist.index + 1
          push: (item) !~>
-            if hist.index < hist.items.length - 1
-               hist.items.splice hist.index + 1
-            hist.items.push item
-            if hist.items.length > hist.max
-               hist.items.shift!
-            hist.index = hist.items.length - 1
+            unless !hist.duplicate and hist.items.length and item == hist.item
+               if hist.index < hist.items.length - 1
+                  hist.items.splice hist.index + 1
+               hist.items.push item
+               if hist.items.length > hist.max
+                  hist.items.shift!
+               hist.index = hist.items.length - 1
+               hist.update!
+         insert: (item, at = hist.items.length, offsetIndexAfterInsert = 0) !~>
+            if at < 0
+               at = hist.items.length + at
+               at = 0 if at < 0
+            else if at > hist.items.length
+               at = hist.items.length
+            unless !hist.duplicate and hist.items.length and at > 0 and item == hist.item[at - 1]
+               hist.items.splice at, 0 item
+               if hist.items.length > hist.max
+                  hist.items.shift!
+                  at--
+               hist.index = at
+            else
+               hist.index = at - 1
+            if offsetIndexAfterInsert
+               index2 = hist.index + offsetIndexAfterInsert
+               if 0 <= index2 < hist.items.length
+                  hist.index = index2
             hist.update!
-         insert: (item, at = -2) !~>
-            hist.items.splice at, 0 item
-            if hist.items.length > hist.max
-               hist.items.shift!
-            hist.index = hist.items.length - 1
+
          update: !~>
             hist.item = hist.items[hist.index]
             hist.canGoBack = hist.index > 0
             hist.canGoForward = hist.index < hist.items.length - 1
+            m.redraw! if hist.redraw
       hist.update!
       hist
+
+   createRouter: (mountEl, routes) ->
+      for pattern, comp of routes
+         unless pattern.0 == \/
+            throw Error "Đường dẫn phải bắt đầu với /"
+         trigger = pattern.replace /\/(?:(?::(\w+))(\.{3})?|(\.{3}))/g (, name, dots, dots2) ~>
+            if dots2
+               \/.+
+            else
+               val = dots and \.+ or \\\w+
+               val = "(?<#name>#val)" if name
+               "/#val"
+         trigger = RegExp "^#{trigger}$"
+         route =
+            pattern: pattern
+            comp: comp
+            trigger: trigger
+         routes[pattern] = route
+      router =
+         routes: routes
+         route: void
+         path: void
+         hist: @createHist!
+         back: !~>
+            if item = router.hist.back!
+               router.set item.0, item.1, yes
+         forward: !~>
+            if item = router.hist.forward!
+               router.set item.0, item.1, yes
+         canGoBack:~->
+            router.hist.canGoBack
+         canGoForward:~->
+            router.hist.canGoForward
+         set: (path, attrs, dontPushHist) ~>
+            for pattern, route of router.routes
+               if result = route.trigger.exec path
+                  router.route = route
+                  router.path = path
+                  attrs ?= {}
+                  if result.groups
+                     attrs <<< that
+                  m.mount mountEl,
+                     view: ~>
+                        m route.comp, attrs
+                  unless dontPushHist
+                     router.hist.push [path, attrs]
+                  break
+      router
 
    stopPropagation: (event) !->
       event.redraw = no
@@ -353,6 +421,12 @@ class Both
       event.redraw = no
       event.target.scrollLeft = Math.round event.target.scrollLeft
       event.target.scrollTop = Math.round event.target.scrollTop
+
+   cssObjectFitToBackgroundSize: (val) ->
+      switch val
+      | \cover \contain => val
+      | \fill => "100% 100%"
+      | \none => \auto
 
    getRect: (el) ->
       rect = el.getBoundingClientRect!

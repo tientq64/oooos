@@ -9,7 +9,7 @@
 - Thêm màn hình loading khi task đang được load khi chạy, gồm icon và tên app.
 - Fix app `OpenWith` khi không nhận được tập tin sẽ bị lỗi.
 - Data phía frme nhận được khi gọi hàm `Frme::initTaskFrme` bây giờ sẽ được assign hết vào biến `os`, không viết thủ công nữa.
-- Hàm `Both::formatMenuItems`, divider bây giờ sẽ bị xóa nếu có header phía trên, thay vì xóa header như trước. Nếu muốn tạo divider tách ra khỏi header đó, hãy tạo header với giá trị là chuỗi trống.
+- Hàm `Both::formatMenuItems`, divider bây giờ sẽ bị xóa nếu có header phía trên, thay vì xóa header như trước. Nếu muốn tạo divider tách ra khỏi header đó, hãy tạo header mới với giá trị là chuỗi trống.
 
 ## [0.5.0] - 07/11/2023
 

@@ -50,6 +50,8 @@ class Frme extends Both
          showContextMenu
          showMenubarMenu
          closeMenubarMenu
+         showSelectMenu
+         closeSelectMenu
          showTooltip
          closeTooltip
       ]>

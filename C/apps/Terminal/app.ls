@@ -55,6 +55,12 @@ App = m.comp do
                task.type
                task.path
 
+   run: (name, env) ->
+      os.runTask name, env
+
+   kill: (pid) ->
+      os.closeTask pid
+
    exit: (val) ->
       os.close val
 

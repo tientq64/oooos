@@ -11,12 +11,29 @@ class OS extends Task
       @tasks = []
       @task = void
 
+      @taskbarPositions =
+         *  text: "Trên"
+            value: \top
+         *  text: "Dưới"
+            value: \bottom
+            isDefault: yes
       @taskbarPosition = \bottom
       @taskbarHeight = 39
 
       @desktopWidth = void
       @desktopHeight = void
       @desktopTask = void
+      @desktopBgImageFits =
+         *  text: "Cover"
+            value: \cover
+            isDefault: yes
+         *  text: "Contain"
+            value: \contain
+         *  text: "Fill"
+            value: \fill
+         *  text: "None"
+            value: \none
+      @desktopBgImageFit = \cover
       @desktopBgImagePath = void
       @desktopBgImageDataUrl = void
       @updateDesktopSize!
@@ -36,11 +53,12 @@ class OS extends Task
       @submenuMenuClose = void
       @contextMenuClose = void
       @menubarMenuClose = void
+      @selectMenuClose = void
       @tooltipClose = void
       @tooltipTimerId = void
 
    oncreate: (vnode) !->
-      super vnode
+      await super vnode
 
       await @initTime!
       await @initBattery!
@@ -48,9 +66,10 @@ class OS extends Task
       await @initEvents!
       await @initTasks!
 
+      @loaded = yes
       m.redraw!
 
-      @runTask \Test
+      @runTask \GameOfLife
 
    updateDesktopSize: !->
       @desktopWidth = innerWidth
@@ -270,7 +289,7 @@ class OS extends Task
          m \.OS.Portal,
             class: m.class do
                "OS--taskbar-#@taskbarPosition"
-               "OS--fullscreen": os.task?fullscreen
+               "OS--fullscreen": @task?fullscreen
             onmousedown: @onmousedownOS
             m \.OS-body,
                m \.OS-tasks,
@@ -289,6 +308,7 @@ class OS extends Task
                      m Button,
                         basic: yes
                         icon: \fad:home
+                        tooltip: "Home|top,bottom"
                   m \.OS-taskbarSearch,
                      m TextInput,
                         icon: \search
@@ -358,13 +378,13 @@ class OS extends Task
                                  class: "OS-taskbarPinnedApp OS-stopMouseDown"
                                  basic: yes
                                  icon: item.icon
-                                 tooltip: "#{item.name}|top"
+                                 tooltip: "#{item.name}|top,bottom"
                                  onclick: @onclickTaskbarPinnedApp.bind void item
                   m \.OS-taskbarTrays,
                      m Button,
                         basic: yes
                         icon: \wifi
-                        tooltip: "Mạng|top"
+                        tooltip: "Mạng|top,bottom"
                      m Popover,
                         maxWidth: 360
                         content: ~>
@@ -373,15 +393,15 @@ class OS extends Task
                         m Button,
                            basic: yes
                            icon: \volume
-                           tooltip: "Âm thanh|top"
+                           tooltip: "Âm thanh|top,bottom"
                      if @battery
                         m Button,
                            basic: yes
                            icon: @getBatteryIcon!
-                           tooltip: "Pin: #{@batteryLevel * 100}%, #{@batteryCharging and \đang or \không} sạc|top"
+                           tooltip: "Pin: #{@batteryLevel * 100}%, #{@batteryCharging and \đang or \không} sạc|top,bottom"
                      m Button,
                         basic: yes
-                        tooltip: @upperFirst @time.format "dddd, DD MMMM, YYYY|top"
+                        tooltip: "#{@upperFirst @time.format "dddd, DD MMMM, YYYY"}|top,bottom"
                         @time.format "HH:mm, DD/MM/YYYY"
                      m Button,
                         basic: yes

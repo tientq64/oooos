@@ -3,6 +3,7 @@ Menu = m.comp do
       @item = void
       @popper = void
       @timerId = void
+      @hasValueAttr = \value of @attrs
 
    onbeforeupdate: !->
       @isSubmenu = @attrs.isSubmenu
@@ -14,8 +15,11 @@ Menu = m.comp do
          @clicks = clicks
       @items = items or []
 
-   getIsActivedItem: (item) ->
-      (@item and @item.id == item.id) or (item.value != void and item.value == @attrs.value)
+   getIsActivedIdItem: (item) ->
+      @item and @item.id == item.id
+
+   getIsActivedValueItem: (item) ->
+      @hasValueAttr and item.value == @attrs.value
 
    setItem: (item) !->
       @item = item
@@ -30,7 +34,7 @@ Menu = m.comp do
          @popper = void
 
    onmouseenterMenuItem: (item, event) !->
-      unless @getIsActivedItem item
+      unless @getIsActivedIdItem item
          targetEl = event.target
          if @isSubmenu
             @setItem void
@@ -40,17 +44,20 @@ Menu = m.comp do
                   @setItem item
                   popperEl = document.createElement \div
                   popperEl.className = "OS-menuPopper"
-                  targetEl.appendChild popperEl
+                  @dom.appendChild popperEl
                   m.mount popperEl,
                      view: ~>
                         m Menu,
+                           activeItemClass: @attrs.activeItemClass
+                           basic: yes
                            isSubmenu: yes
                            root: @root
-                           basic: yes
+                           value: if @hasValueAttr => @attrs.value else m.DELETE
                            items: item.subitems
                   @popper = os.createPopper targetEl, popperEl,
                      placement: \right-start
                      offset: [-4 -2]
+                     flips: [\left-start]
                , 200
          else
             @setItem void
@@ -59,7 +66,7 @@ Menu = m.comp do
                @timerId = setTimeout !~>
                   @setItem item
                   rect = os.getRect targetEl
-                  if clickedItem = await os.showSubmenuMenu rect, item.subitems, os.isFrme
+                  if clickedItem = await os.showSubmenuMenu rect, item.subitems, @hasValueAttr, @attrs.value, os.isFrme
                      os.safeSyncCall @clicks[clickedItem.id], clickedItem
                      os.safeSyncCall @attrs.onItemClick, clickedItem
                   @setItem void
@@ -92,35 +99,36 @@ Menu = m.comp do
             @attrs.class
          style: m.style do
             @attrs.style
-         @items.map (item) ~>
-            isActive = @getIsActivedItem item
-            if item.divider
-               m \.Menu-divider,
-                  key: item.id
-            else if item.isHeader
-               m \.Menu-header,
-                  key: item.id
-                  item.header
-            else
-               m \.Menu-item,
-                  key: item.id
-                  class: m.class do
-                     "active": isActive
-                     "disabled": item.disabled
-                     @attrs.activeItemClass if isActive
-                     "Menu-item--#that" if item.color
-                  onmouseenter: @onmouseenterMenuItem.bind void item
-                  onmouseleave: @onmouseleaveMenuItem.bind void item
-                  onclick: @onclickMenuItem.bind void item
-                  m Icon,
-                     class: "Menu-icon"
-                     name: item.icon
-                  m \.Menu-text,
-                     item.text,
-                  m \.Menu-label,
-                     if item.subitems
-                        m Icon,
-                           name: \caret-right
-                           compact: yes
-                     else
-                        item.label
+         m \.Menu-items,
+            @items.map (item) ~>
+               if item.divider
+                  m \.Menu-divider,
+                     key: item.id
+               else if item.isHeader
+                  m \.Menu-header,
+                     key: item.id
+                     item.header
+               else
+                  isActivedIdItem = @getIsActivedIdItem item
+                  m \.Menu-item,
+                     key: item.id
+                     class: m.class do
+                        "active": isActivedIdItem and !(@hasValueAttr and item.subitems and !isActivedIdItem)
+                        "disabled": item.disabled
+                        @attrs.activeItemClass if @getIsActivedValueItem item and !item.subitems
+                        "Menu-item--#that" if item.color
+                     onmouseenter: @onmouseenterMenuItem.bind void item
+                     onmouseleave: @onmouseleaveMenuItem.bind void item
+                     onclick: @onclickMenuItem.bind void item
+                     m Icon,
+                        class: "Menu-icon"
+                        name: item.icon
+                     m \.Menu-text,
+                        item.text,
+                     m \.Menu-label,
+                        if item.subitems
+                           m Icon,
+                              name: \caret-right
+                              compact: yes
+                        else
+                           item.label

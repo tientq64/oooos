@@ -354,6 +354,7 @@ App = m.comp do
                      gridAutoColumns: 120
                      gridAutoFlow: \column
                      backgroundImage: "url(#that)" if os.desktopBgImageDataUrl
+                     backgroundSize: os.cssObjectFitToBackgroundSize os.desktopBgImageFit
                   onpointerdown: @onpointerdownEnts
                   onpointermove: @onpointermoveEnts
                   onpointerup: @onpointerupEnts

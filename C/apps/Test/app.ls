@@ -158,6 +158,35 @@ App = m.comp do
             types: [\ground]
             dex: "Tổ mà nó tạo ra trên sa mạc có hình dạng cong như cái chén, nếu rơi vào thì không thể thoát ra."
 
+      @selectItems =
+         *  text: "String"
+            value: \van-ban
+         *  text: "Number"
+            icon: \hashtag
+            value: 16
+         *  text: "Boolean"
+            value: no
+         *  text: "NaN"
+            value: NaN
+         *  text: "Null"
+            value: null
+         *  text: "Undefined"
+            value: void
+         *  text: "Icon"
+            icon: \fire
+            value: \fire
+         *  text: "Only text"
+         *  value: "Only value"
+         *  text: "Submenu"
+            subitems:
+               *  text: \1
+                  icon: 0
+                  value: 1
+               *  text: \2
+                  icon: \o
+                  value: 2
+      @selectValue = 16
+
    oncreate: !->
 
    view: ->
@@ -187,6 +216,13 @@ App = m.comp do
          m \span,
             "@bool: #@bool"
 
+         m \h3.col-12 "Select:"
+         m Select
+         m Select,
+            value: @selectValue
+            items: @selectItems
+            onValueChange: (@selectValue) !~>
+
          m \h3.col-12 "Radio:"
          m Radio
          m Radio,
@@ -203,6 +239,14 @@ App = m.comp do
                @bool = event.target.checked
             "Checkbox"
 
+         m \h3.col-12 "Textarea:"
+         m Textarea
+         m Textarea,
+            resize: \vertical
+            value: @text
+            onchange: (event) !~>
+               @text = event.target.value
+
          m \h3.col-12 "Tooltip:"
          m Button,
             tooltip: "Chào ông cháu 🤭"
@@ -211,17 +255,17 @@ App = m.comp do
             tooltip: "Tooltip của <span>"
             "Span"
          m Button,
-            tooltip: "Tooltip này nên hiển thị ở bên trái nếu có thể|left"
+            tooltip: "Tooltip này nên hiển thị ở bên trái nếu có thể|left,"
             "Với vị trí"
          m Button,
             tooltip: "Tooltip này nên hiển thị ở các vị trí trái, trên, dưới, theo thứ tự nếu có thể|left,top,bottom"
             "Nhiều vị trí"
          m Button,
-            tooltip: "Không hợp lệ nên hiển thị|riGht"
+            tooltip: "Không hợp lệ nên hiển thị|riGht,"
             "Vị trí không hợp lệ"
          m \span,
             tooltip: "Tooltip|top|"
-            "Thêm dấu | ở cuối để đảm bảo tooltip hiển thị đúng"
+            "Thêm dấu | ở cuối để đảm bảo tooltip hiển thị đúng \"|top\""
          m Button,
             tooltip: ""
             "Trống"
@@ -319,7 +363,9 @@ App = m.comp do
                      m \td.text-wrap pokemon.dex
 
          m \h3.col-12 "PasswordInput:"
+         m PasswordInput
          m PasswordInput,
+            icon: \lock
             value: @text
 
          m \h3.col-12 "InputGroup:"

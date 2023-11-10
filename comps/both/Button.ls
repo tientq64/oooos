@@ -23,12 +23,14 @@ Button = m.comp do
          tooltip: @attrs.tooltip
          onclick: @attrs.onclick
          oncontextmenu: @attrs.oncontextmenu
-         if @attrs.icon
+         if @attrs.icon?
             m Icon,
+               class: "Button-icon Button-leftIcon"
                name: @attrs.icon
          if @children.length
             m \.Button-text,
                @children
-         if @attrs.rightIcon
+         if @attrs.rightIcon?
             m Icon,
+               class: "Button-icon Button-rightIcon"
                name: @attrs.rightIcon

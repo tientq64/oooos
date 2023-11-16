@@ -27,10 +27,10 @@ PasswordInput = m.comp do
          style: m.style do
             @attrs.style
          fill: @attrs.fill
+         disabled: @attrs.disabled
          @textInput =
             m TextInput,
                name: @attrs.name
-               disabled: @attrs.disabled
                minLength: @attrs.minLength
                maxLength: @attrs.maxLength
                pattern: @attrs.pattern

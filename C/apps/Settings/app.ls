@@ -5,18 +5,18 @@ App = m.comp do
          *  text: "Trang chính"
             icon: \home
             value: \/home
-         *  text: "Màn hình"
+         *  text: "Màn hình và hiển thị"
             icon: \display
             value: \/display
-         *  text: "Chủ đề và màu sắc"
+         *  text: "Giao diện"
             icon: \palette
             value: \/theme
          *  text: "Phông chữ"
             icon: \font
             value: \/text
-         *  text: "Hình nền và desktop"
-            icon: \image-landscape
-            value: \/desktop
+         *  text: "Tác vụ"
+            icon: \window-restore
+            value: \/tasks
          *  text: "Thông báo"
             icon: \bell
             value: \/notify
@@ -29,7 +29,7 @@ App = m.comp do
          *  text: "Mạng và kết nối"
             icon: \wifi
             value: \/network
-         *  text: "Bộ nhớ lưu trữ"
+         *  text: "Tệp và bộ nhớ"
             icon: \hard-drive
             value: \/storage
          *  text: "Taskbar"
@@ -44,12 +44,9 @@ App = m.comp do
          *  text: "Ứng dụng"
             icon: \grid-2
             value: \/apps
-         *  text: "Ngày và giờ"
+         *  text: "Thời gian và ngôn ngữ"
             icon: \clock
             value: \/time
-         *  text: "Ngôn ngữ"
-            icon: \language
-            value: \/language
          *  text: "Bàn phím và nhập"
             icon: \keyboard
             value: \/keyboard
@@ -68,8 +65,8 @@ App = m.comp do
          "/home": HomePage
          "/display": DisplayPage
          "/theme": ThemePage
-         "/text": TextPage
-         "/desktop": DesktopPage
+         "/text": FontPage
+         "/tasks": TasksPage
          "/notify": NotifyPage
          "/audio": AudioPage
          "/power": PowerPage
@@ -80,7 +77,6 @@ App = m.comp do
          "/account": AccountPage
          "/apps": AppsPage
          "/time": TimePage
-         "/language": LanguagePage
          "/keyboard": KeyboardPage
          "/developer": DeveloperPage
          "/security": SecurityPage
@@ -91,7 +87,7 @@ App = m.comp do
       @router.set item.value
 
    view: ->
-      m \.row.gap-5.h-100.p-3,
+      m \.row.gap-6.h-100p.p-3,
          m \.col-0.ov-auto,
             style: m.style do
                width: 280
@@ -109,106 +105,203 @@ App = m.comp do
 
 HomePage = m.comp do
    view: ->
-      m \.column.h-100,
-         "HomePage"
+      m \.column.h-100p.divide-y.divide-gray3,
+         m \.row.between.py-2,
+            m \.row.middle.h-30px,
+               "HomePage"
 
 DisplayPage = m.comp do
    view: ->
-      m \.column.h-100,
-         "DisplayPage"
+      m \.column.h-100p.divide-y.divide-gray3,
+         m \.row.between.py-2,
+            m \.row.middle.h-30px,
+               "DisplayPage"
 
 ThemePage = m.comp do
-   view: ->
-      m \.column.h-100,
-         "ThemePage"
+   oninit: !->
+      @colors =
+         *  text: "Xám"
+            value: \#1e293b
+         *  text: "Đỏ"
+            value: \#9f1239
+         *  text: "Cam"
+            value: \#9a3412
+         *  text: "Vàng"
+            value: \#854d0e
+         *  text: "Lục"
+            value: \#166534
+         *  text: "Xanh lơ"
+            value: \#155e75
+         *  text: "Lam"
+            value: \#1e40af
+         *  text: "Chàm"
+            value: \#3730a3
+         *  text: "Tím"
+            value: \#6b21a8
+         *  text: "Hồng"
+            value: \#9d174d
+      os.requestPerm \desktopBgView
 
-TextPage = m.comp do
-   view: ->
-      m \.column.h-100,
-         "TextPage"
+   onValueChangeDesktopBgImageFit: (val) !->
+      os.setDesktopBgImageFit val
 
-DesktopPage = m.comp do
    view: ->
-      m \.column.h-100,
-         "DesktopPage"
+      m \.column.h-100p.divide-y.divide-gray3,
+         m \.row.between.py-2,
+            m \.row.middle.h-30px,
+               "Hình nền"
+            m \.col-0,
+               m \img.image-thumbnail.image-contrast,
+                  src: os.desktopBgImageDataUrl
+                  height: 120
+         m \.row.between.py-2,
+            m \.row.middle.h-30px,
+               "Màu nền"
+            m \.row.gap-1,
+               @colors.map (color) ~>
+                  m \.col-0.row.center.middle.w-30px.h-30px.rounded,
+                     style: m.style do
+                        background: color.value
+                     tooltip: "#{color.text}|top"
+         m \.row.between.middle.py-2,
+            m \.row.middle.h-30px,
+               "Kéo giãn hình nền"
+            m Select,
+               value: os.desktopBgImageFit
+               items: os.desktopBgImageFits
+               onValueChange: @onValueChangeDesktopBgImageFit
+
+FontPage = m.comp do
+   view: ->
+      m \.column.h-100p.divide-y.divide-gray3,
+         m \.row.between.py-2,
+            m \.row.middle.h-30px,
+               "FontPage"
+
+TasksPage = m.comp do
+   view: ->
+      m \.column.h-100p.divide-y.divide-gray3,
+         m \.row.between.py-2,
+            m \.row.middle.h-30px,
+               "TasksPage"
 
 NotifyPage = m.comp do
    view: ->
-      m \.column.h-100,
-         "NotifyPage"
+      m \.column.h-100p.divide-y.divide-gray3,
+         m \.row.between.py-2,
+            m \.row.middle.h-30px,
+               "NotifyPage"
 
 AudioPage = m.comp do
    view: ->
-      m \.column.h-100,
-         "AudioPage"
+      m \.column.h-100p.divide-y.divide-gray3,
+         m \.row.between.py-2,
+            m \.row.middle.h-30px,
+               "AudioPage"
 
 PowerPage = m.comp do
    view: ->
-      m \.column.h-100,
-         "PowerPage"
+      m \.column.h-100p.divide-y.divide-gray3,
+         m \.row.between.py-2,
+            m \.row.middle.h-30px,
+               "Chế độ tiết kiệm pin"
+            m Switch
 
 NetworkPage = m.comp do
    view: ->
-      m \.column.h-100,
-         "NetworkPage"
+      m \.column.h-100p.divide-y.divide-gray3,
+         m \.row.between.py-2,
+            m \.row.middle.h-30px,
+               "NetworkPage"
 
 StoragePage = m.comp do
    view: ->
-      m \.column.h-100,
-         "StoragePage"
+      m \.column.h-100p.divide-y.divide-gray3,
+         m \.row.between.py-2,
+            m \.row.middle.h-30px,
+               "StoragePage"
 
 TaskbarPage = m.comp do
+   oninit: !->
+      os.requestPerm \taskbarView
+
+   onValueChangeTaskbarPosition: (val) !->
+      os.setTaskbarPosition val
+
+   onchangeTaskbarPositionLocked: (event) !->
+      os.setTaskbarPositionLocked event.target.checked
+
    view: ->
-      m \.column.h-100,
-         "TaskbarPage"
+      m \.column.h-100p.divide-y.divide-gray3,
+         m \.row.between.py-2,
+            class: m.class do
+               "disabled": os.taskbarPositionLocked
+            m \.row.middle.h-30px,
+               "Vị trí taskbar"
+            m Select,
+               disabled: os.taskbarPositionLocked
+               value: os.taskbarPosition
+               items: os.taskbarPositions
+               onValueChange: @onValueChangeTaskbarPosition
+         m \.row.between.py-2,
+            m \.row.middle.h-30px,
+               "Khóa vị trí taskbar"
+            m Switch,
+               checked: os.taskbarPositionLocked
+               onchange: @onchangeTaskbarPositionLocked
 
 LockScreenPage = m.comp do
    view: ->
-      m \.column.h-100,
-         "LockScreenPage"
+      m \.column.h-100p.divide-y.divide-gray3,
+         m \.row.between.py-2,
+            m \.row.middle.h-30px,
+               "LockScreenPage"
 
 AccountPage = m.comp do
    view: ->
-      m \.column.h-100,
-         "AccountPage"
+      m \.column.h-100p.divide-y.divide-gray3,
+         m \.row.between.py-2,
+            m \.row.middle.h-30px,
+               "AccountPage"
 
 AppsPage = m.comp do
    view: ->
-      m \.column.h-100,
-         "AppsPage"
+      m \.column.h-100p.divide-y.divide-gray3,
+         m \.row.between.py-2,
+            m \.row.middle.h-30px,
+               "AppsPage"
 
 TimePage = m.comp do
    view: ->
-      m \.column.h-100,
-         "TimePage"
-
-LanguagePage = m.comp do
-   view: ->
-      m \.column.h-100,
-         "LanguagePage"
+      m \.column.h-100p.divide-y.divide-gray3,
+         m \.row.between.py-2,
+            m \.row.middle.h-30px,
+               "Định dạng ngày giờ"
 
 KeyboardPage = m.comp do
    view: ->
-      m \.column.h-100,
-         "KeyboardPage"
+      m \.column.h-100p.divide-y.divide-gray3,
+         m \.row.between.py-2,
+            m \.row.middle.h-30px,
+               "KeyboardPage"
 
 DeveloperPage = m.comp do
    view: ->
-      m \.column.h-100,
-         "DeveloperPage"
+      m \.column.h-100p.divide-y.divide-gray3,
+         m \.row.between.py-2,
+            m \.row.middle.h-30px,
+               "DeveloperPage"
 
 SecurityPage = m.comp do
    view: ->
-      m \.column.h-100,
-         "SecurityPage"
+      m \.column.h-100p.divide-y.divide-gray3,
+         m \.row.between.py-2,
+            m \.row.middle.h-30px,
+               "SecurityPage"
 
 UpdatePage = m.comp do
    view: ->
-      m \.column.h-100,
-         "UpdatePage"
-
-
-TaskbarPage = m.comp do
-   view: ->
-      m \.column.h-100,
-         "TaskbarPage"
+      m \.column.h-100p.divide-y.divide-gray3,
+         m \.row.between.py-2,
+            m \.row.middle.h-30px,
+               "UpdatePage"

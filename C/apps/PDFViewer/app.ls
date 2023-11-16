@@ -49,7 +49,7 @@ App = m.comp do
             @lazyLoadPages!
 
    view: ->
-      m \.column.gap-1.h-100,
+      m \.column.gap-1.h-100p,
          m \.col-0.px-1,
             m Menubar,
                menus:

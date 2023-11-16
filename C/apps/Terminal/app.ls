@@ -132,7 +132,7 @@ App = m.comp do
       @input = event.target.value
 
    view: ->
-      m \.column.h-100.bg-black,
+      m \.column.h-100p.bg-black,
          @linesVnode =
             m \.col.column.gap-2.p-3.ov-auto.font-mono.text-pre-wrap.scroll-smooth.select-text,
                @lines.map (line) ~>

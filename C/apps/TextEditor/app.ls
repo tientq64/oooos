@@ -28,7 +28,7 @@ App = m.comp do
       @val = event.target.value
 
    view: ->
-      m \.column.gap-1.h-100.p-1,
+      m \.column.gap-1.h-100p.p-1,
          m \.col-0,
             m Menubar,
                menus:
@@ -53,7 +53,7 @@ App = m.comp do
                   *  text: "Trợ giúp"
          m \.col,
             m Textarea,
-               class: "h-100"
+               class: "h-100p"
                fill: yes
                autoFocus: yes
                value: @val

@@ -18,7 +18,7 @@ App = m.comp do
       os.close!
 
    view: ->
-      m \.column.gap-3.h-100.p-3,
+      m \.column.gap-3.h-100p.p-3,
          @ent and m.fragment do
             m \.col.ov-auto,
                m Menu,

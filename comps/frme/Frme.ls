@@ -32,6 +32,9 @@ class Frme extends Both
          runTask
          focusTask
          closeTask
+         setTaskbarPosition
+         setTaskbarPositionLocked
+         setDesktopBgImageFit
          setDesktopBgImagePath
          minimize
          maximize
@@ -206,4 +209,10 @@ class Frme extends Both
             "maximized": @maximized
             "fullscreen": @fullscreen
             "Frme--useContentSize": @useContentSize
+         style: m.style do
+            "--fontSans": @fontSans
+            "--fontSerif": @fontSerif
+            "--fontMono": @fontMono
+            "--textSize": @textSize
+            "--textContrast": @textContrast
          m \.Frme-body

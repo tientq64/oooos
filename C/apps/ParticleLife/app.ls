@@ -7,15 +7,12 @@ App = m.comp do
 
    oncreate: !->
       @updateSize!
-      @addGroup 200 \#e11d48
-      @addGroup 200 \#d97706
-      @addGroup 200 \#16a34a
-      @addGroup 200 \#2563eb
-      @addGroup 200 \#475569
-      @addGroup 200 \#7c3aed
-      @addGroup 200 \#0891b2
-      @addGroup 200 \#c026d3
-      @addGroup 200 \#fff
+      @addGroup 160 \#e11d48
+      @addGroup 160 \#d97706
+      @addGroup 160 \#16a34a
+      @addGroup 160 \#2563eb
+      @addGroup 160 \#475569
+      @addGroup 160 \#7c3aed
       @render!
       window.addEventListener \resize @updateSize
       m.redraw!
@@ -70,7 +67,7 @@ App = m.comp do
             dx = atom.x - atom2.x
             dy = atom.y - atom2.y
             d = Math.sqrt dx * dx + dy * dy
-            if d > 0 and d < os.random 80 160
+            if d > 0 and d < 80
                f = g * 1 / d
                fx += f * dx
                fy += f * dy
@@ -106,10 +103,10 @@ App = m.comp do
    onclickRandomG: (event) !->
       for k, val of @gMaps
          for k2, g of val
-            val[k2] = Number ((os.random -10 10) / 10)toFixed 2
+            val[k2] = Number ((os.random -10 8) / 10)toFixed 2
 
    view: ->
-      m \.column.h-100,
+      m \.column.h-100p,
          m \.col-0,
             m Menubar,
                menus:
@@ -131,15 +128,15 @@ App = m.comp do
                      gridTemplateColumns: "repeat(#{@groups.length + 1}, 1fr)"
                      gridAutoRows: 32
                      gap: 2
-                  m \.div,
+                  m \div,
                      "\xa0"
                   @groups.map (group) ~>
-                     m \.div,
+                     m \div,
                         style:
                            background: group.color
                   @groups.map (groupA) ~>
                      m.fragment do
-                        m \.div,
+                        m \div,
                            style:
                               background: groupA.color
                         @groups.map (groupB) ~>

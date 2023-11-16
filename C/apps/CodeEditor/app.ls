@@ -166,7 +166,7 @@ App = m.comp do
       @closeTab tab
 
    view: ->
-      m \.column.h-100.dark,
+      m \.column.h-100p.dark,
          m \.col-0.border-b,
             m Menubar,
                menus:

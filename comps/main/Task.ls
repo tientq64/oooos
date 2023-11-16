@@ -89,9 +89,9 @@ class Task extends Both
 
       switch @type
       | \core
-         styl = ""
+         styl = stylD
          try
-            styl = await os.readFile "#@path/app.styl"
+            styl += await os.readFile "#@path/app.styl"
          styl = stylus.render styl,
             compress: yes
          @stylEl.textContent = styl
@@ -429,6 +429,12 @@ class Task extends Both
             status: \ask
          *  name: \tasksView
             status: \ask
+         *  name: \fontView
+            status: \granted
+            listened: yes
+         *  name: \textView
+            status: \granted
+            listened: yes
          *  name: \actionsView
             status: \granted
             listened: yes
@@ -483,6 +489,7 @@ class Task extends Both
                   await @promiseAll do
                      @send \perm \taskbarPositions os.taskbarPositions
                      @send \perm \taskbarPosition os.taskbarPosition
+                     @send \perm \taskbarPositionLocked os.taskbarPositionLocked
                      @send \perm \taskbarHeight os.taskbarHeight
                | \desktopBgView
                   await @promiseAll do
@@ -496,6 +503,15 @@ class Task extends Both
                | \tasksView
                   vtasks = @getVtasks!
                   await @send \perm \tasks vtasks
+               | \fontView
+                  await @promiseAll do
+                     @send \perm \fontSans os.fontSans
+                     @send \perm \fontSerif os.fontSerif
+                     @send \perm \fontMono os.fontMono
+               | \textView
+                  await @promiseAll do
+                     @send \perm \textSize os.textSize
+                     @send \perm \textContrast os.textContrast
                | \actionsView
                   await @promiseAll do
                      @send \perm \minimized @minimized
@@ -623,17 +639,27 @@ class Task extends Both
    setTaskbarPosition: (val) !->
       if os.taskbarPosition == val
          return
+      if os.taskbarPositionLocked
+         throw Error "taskbarPosition đã bị khóa"
       unless os.taskbarPositions.some (.value == val)
-         throw TypeError "Giá trị taskbarPosition '#val' không hợp lệ"
+         throw Error "Giá trị taskbarPosition '#val' không hợp lệ"
       os.taskbarPosition = val
       @sendPermAll \taskbarView \taskbarPosition val
+      m.redraw!
+
+   setTaskbarPositionLocked: (val) !->
+      val = Boolean val ? !os.taskbarPositionLocked
+      if os.taskbarPositionLocked == val
+         return
+      os.taskbarPositionLocked = val
+      @sendPermAll \taskbarView \taskbarPositionLocked val
       m.redraw!
 
    setDesktopBgImageFit: (val) !->
       if os.desktopBgImageFit == val
          return
       unless os.desktopBgImageFits.some (.value == val)
-         throw TypeError "Giá trị desktopBgImageFit '#val' không hợp lệ"
+         throw Error "Giá trị desktopBgImageFit '#val' không hợp lệ"
       os.desktopBgImageFit = val
       @sendPermAll \desktopBgView \desktopBgImageFit val
       m.redraw!
@@ -896,6 +922,11 @@ class Task extends Both
       darkMode: @darkMode
       autoListen: @autoListen
       args: @args
+      fontSans: os.fontSans
+      fontSerif: os.fontSerif
+      fontMono: os.fontMono
+      textSize: os.textSize
+      textContrast: os.textContrast
 
    loadedFrme: !->
       if @hidden
@@ -1158,7 +1189,7 @@ class Task extends Both
             easing: @easeOut
       anim.finished
 
-   view: (vnode, vdom) ->
+   view: (vnode, attrs = {}, vdom) ->
       m \.Task,
          class: m.class do
             "dark": @darkMode
@@ -1169,9 +1200,12 @@ class Task extends Both
             "Task--fullscreen": @fullscreen
             "Task--noHeader": @getNoHeader!
             "Task--loading": !@loaded
+            attrs.class
          style: m.style do
             zIndex: @z
+            attrs.style
          inert: @minimized
+         onmousedown: attrs.onmousedown
          m \.Task-header,
             inert: @getNoHeader!
             m \.Task-title,

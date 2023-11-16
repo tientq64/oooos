@@ -1,11 +1,12 @@
 Button = m.comp do
    onbeforeupdate: !->
+      @attrs.activeClass ?= ""
       @attrs.type ?= \button
 
    view: ->
       m \button.Button,
          class: m.class do
-            "active": @attrs.active
+            "active #{@attrs.activeClass}": @attrs.active
             "disabled": @attrs.disabled
             "Button--fill": @attrs.fill
             "Button--basic": @attrs.basic
@@ -20,6 +21,7 @@ Button = m.comp do
             @attrs.style
          type: @attrs.type
          disabled: @attrs.disabled
+         inert: @attrs.disabled
          tooltip: @attrs.tooltip
          onclick: @attrs.onclick
          oncontextmenu: @attrs.oncontextmenu

@@ -190,7 +190,7 @@ App = m.comp do
    oncreate: !->
 
    view: ->
-      m \.row.wrap.middle.gap-3.h-100.p-3.ov-auto,
+      m \.row.wrap.middle.gap-3.h-100p.p-3.ov-auto,
          onscroll: os.fixBlurryScroll
 
          m Switch,
@@ -367,6 +367,10 @@ App = m.comp do
          m PasswordInput,
             icon: \lock
             value: @text
+         m PasswordInput,
+            disabled: yes
+            icon: \lock
+            value: @text
 
          m \h3.col-12 "InputGroup:"
          m InputGroup,
@@ -465,5 +469,5 @@ App = m.comp do
          m \h3.col-12 "Image:"
          m \img,
             src: \https://i.ibb.co/gSDp1bR/i14745531949.jpg
-         m \img.thumbnail,
+         m \img.image-thumbnail,
             src: \https://www.serebii.net/dungeon2/headshot/448.png

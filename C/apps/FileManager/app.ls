@@ -273,7 +273,7 @@ App = m.comp do
             icon: \circle-info
 
    view: ->
-      m \.column.h-100,
+      m \.column.h-100p,
          unless @isDesktop
             m \.col-0.row.gap-3.p-3,
                m InputGroup,
@@ -307,14 +307,14 @@ App = m.comp do
          m \.col.relative.ov-hidden,
             switch @viewType
             | \list
-               m \.h-100.p-3,
+               m \.h-100p.p-3,
                   onpointerdown: @onpointerdownEnts
                   onpointermove: @onpointermoveEnts
                   onpointerup: @onpointerupEnts
                   onlostpointercapture: @onlostpointercaptureEnts
                   oncontextmenu: @oncontextmenuEnts
                   m Table,
-                     class: "max-h-100"
+                     class: "max-h-100p"
                      striped: yes
                      fixed: yes
                      truncate: yes
@@ -346,7 +346,7 @@ App = m.comp do
                               m \td,
                                  dayjs ent.mtime .format "DD/MM/YYYY HH:mm"
             | \desktop
-               m \.grid.gap-1.h-100.p-3.bg-center.bg-no-repeat.bg-black,
+               m \.grid.gap-1.h-100p.p-3.bg-center.bg-no-repeat.bg-black,
                   style: m.style do
                      paddingTop: os.taskbarHeight + 12 if os.taskbarPosition == \top
                      paddingBottom: os.taskbarHeight + 12 if os.taskbarPosition == \bottom
@@ -372,7 +372,7 @@ App = m.comp do
                            m Icon,
                               name: ent.icon
                               size: 32
-                           m \.w-100.truncate,
+                           m \.w-100p.text-truncate,
                               if ent.isShortcut
                                  ent.name.replace /\.lnk$/ ""
                               else

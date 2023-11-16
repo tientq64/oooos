@@ -50,7 +50,7 @@ class Both
    random: (min, max) ->
       max = [1 min, max][&length]
       min = [0 0 min][&length]
-      min + Math.random! * (max - min + 1)
+      min + Math.floor Math.random! * (max - min + 1)
 
    randomUuid: ->
       crypto.randomUUID!
@@ -402,9 +402,10 @@ class Both
                if result = route.trigger.exec path
                   router.route = route
                   router.path = path
-                  attrs ?= {}
+                  attrs = @castNewObj attrs
                   if result.groups
                      attrs <<< that
+                  attrs.key = path
                   m.mount mountEl,
                      view: ~>
                         m route.comp, attrs
@@ -492,12 +493,14 @@ class Both
                   if ext == \js
                      el = document.createElement \script
                      el.onload = resolve
+                     el.onerror = el~remove
                      el.src = url
                      document.body.appendChild el
                   else
                      el = document.createElement \link
                      el.rel = \stylesheet
                      el.onload = resolve
+                     el.onerror = el~remove
                      el.href = url
                      stylLibEl.after el
                | \import

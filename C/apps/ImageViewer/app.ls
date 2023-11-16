@@ -56,7 +56,7 @@ App = m.comp do
       @panzoom.destroy!
 
    view: ->
-      m \.column.h-100,
+      m \.column.h-100p,
          m \.col-0.p-1,
             m Menubar,
                menus:

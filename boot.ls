@@ -47,8 +47,8 @@ function indent text, space
       else space
 
 importVarCode = """
-   text => text.replace(/(^ +)?\\{\\{(@)?(\\w+)}}/gm, (_, space, isThis, name) => {
-      if (isThis) name = "this." + name;
+   text => text.replace(/(^ +)?\\{\\{([\\w@.]+)}}/gm, (_, space, name) => {
+      name = name.replace("@", "this.");
       let val = eval(name);
       if (space) val = indent(val, space);
       return val;

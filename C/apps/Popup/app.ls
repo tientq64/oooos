@@ -40,7 +40,7 @@ App = m.comp do
       os.close!
 
    view: ->
-      m \form.column.h-100.gap-3.p-3,
+      m \form.column.h-100p.gap-3.p-3,
          onsubmit: @onsubmit
          m \.Popup-message.col.ov-auto,
             if @opts.isMarkdown

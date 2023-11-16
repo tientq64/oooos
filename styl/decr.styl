@@ -1,10 +1,10 @@
 line-clamp()
-   -webkit-line-clamp arguments
-   line-clamp arguments
+   -webkit-line-clamp: arguments
+   line-clamp: arguments
 
 text-security()
-   -webkit-text-security arguments
-   text-security arguments
+   -webkit-text-security: arguments
+   text-security: arguments
 
 text-truncate()
    text-overflow: arguments
@@ -12,8 +12,8 @@ text-truncate()
    overflow: hidden
 
 user-drag()
-   -webkit-user-drag arguments
-   user-drag arguments
+   -webkit-user-drag: arguments
+   user-drag: arguments
 
 dark()
    .dark &
@@ -79,12 +79,38 @@ $nonGrayColors = {
    green: $green0 $green1 $green2 $green3 $green4
    blue: $blue0 $blue1 $blue2 $blue3 $blue4
 }
-
 $colors = extend({
    gray: $gray0 $gray1 $gray2 $gray3 $gray4
 }, $nonGrayColors)
 
-$spaces = 0 4px 8px 12px 16px 24px
+$spaces = {
+   "0": 0
+   "1": 4px
+   "2": 8px
+   "3": 12px
+   "4": 16px
+   "6": 24px
+   "8": 32px
+   "10": 40px
+   "12": 48px
+   "16": 64px
+   "24": 96px
+   "32": 128px
+   "48": 192px
+   "64": 256px
+   "96": 384px
+   "px": 1px
+   "2px": 2px
+   "30px": 30px
+}
+$percents = {
+   "0": 0
+   "25p": 25%
+   "50p": 50%
+   "75p": 75%
+   "100p": 100%
+}
+$spaces2 = extend($spaces, $percents)
 
 $sides1 = {
    "": ""
@@ -118,10 +144,6 @@ $sides4 = {
    -r: (-right)
    -b: (-bottom)
 }
-
-$sans = unquote('"Arial", sans-serif')
-$serif = unquote('"Noto Serif", serif')
-$mono = unquote('"D2Coding", monospace')
 
 $fontSizes = 35px 28px 22px 18px 16px 13px
 

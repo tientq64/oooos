@@ -3,4 +3,6 @@ icon: fad:gear
 admin: yes
 width: 1100
 height: 700
+minWidth: 900
+minHeight: 300
 pinnedTaskbar: yes

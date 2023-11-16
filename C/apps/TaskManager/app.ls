@@ -55,14 +55,14 @@ App = m.comp do
                os.closeTask task.pid
 
    view: ->
-      m \.column.gap-1.h-100.p-3.pt-0,
+      m \.column.gap-1.h-100p.p-3.pt-0,
          m \.col-0,
             m Menubar,
                menus: @getMenubarMenus!
          m \.col,
             onmousedown: @onmousedownTasks
             m Table,
-               class: "max-h-100"
+               class: "max-h-100p"
                striped: yes
                fixed: yes
                truncate: yes

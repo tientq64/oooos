@@ -18,6 +18,7 @@ class OS extends Task
             value: \bottom
             isDefault: yes
       @taskbarPosition = \bottom
+      @taskbarPositionLocked = yes
       @taskbarHeight = 39
 
       @desktopWidth = void
@@ -46,6 +47,17 @@ class OS extends Task
       @batteryChargingTime = void
       @batteryDischargingTime = void
 
+      @brightness = 1
+
+      @nightLight = no
+
+      @fontSans = "Arial"
+      @fontSerif = "Noto Serif"
+      @fontMono = "D2Coding"
+
+      @textSize = 16
+      @textContrast = 1
+
       super app, env
 
       @isTask = no
@@ -69,7 +81,7 @@ class OS extends Task
       @loaded = yes
       m.redraw!
 
-      @runTask \GameOfLife
+      # @runTask \Settings
 
    updateDesktopSize: !->
       @desktopWidth = innerWidth
@@ -136,7 +148,7 @@ class OS extends Task
       m.redraw!
 
    updateFocusedTask: (isSort) !->
-      tasks = os.tasks
+      tasks = @tasks
       if isSort
          tasks .= toSorted (taskA, taskB) ~>
             taskA.z - taskB.z
@@ -147,14 +159,14 @@ class OS extends Task
       m.redraw!
 
    getTaskbarPinnedAppsAndTasks: ->
-      pinnedApps = os.apps
+      pinnedApps = @apps
          .filter (app) ~>
             app.pinnedTaskbar
          .map (app) ~>
-            task = os.tasks.find (task2) ~>
+            task = @tasks.find (task2) ~>
                task2.app == app and !task2.skipTaskbar
             task or app
-      tasks = os.tasks
+      tasks = @tasks
          .filter (task) ~>
             !pinnedApps.includes task
       [...pinnedApps, ...tasks]
@@ -180,24 +192,24 @@ class OS extends Task
          @addContextMenu event,
             *  text: "Vị trí taskbar"
                icon: \arrows-up-down-left-right
-               subitems:
-                  *  text: "Trên"
-                     icon: \circle-small if @taskbarPosition == \top
-                     click: !~>
-                        @setTaskbarPosition \top
-                  *  text: "Dưới"
-                     icon: \circle-small if @taskbarPosition == \bottom
-                     click: !~>
-                        @setTaskbarPosition \bottom
+               disabled: @taskbarPositionLocked
+               subitems: @taskbarPositions.map (item) ~>
+                  text: item.text
+                  icon: \circle-small if @taskbarPosition == item.value
+                  click: !~>
+                     @setTaskbarPosition item.value
             *  text: "Khóa vị trí taskbar"
+               icon: \check if @taskbarPositionLocked
+               click: !~>
+                  @setTaskbarPositionLocked!
             ,,
             *  text: "Trình quản lý tác vụ"
                icon: \fad:rectangle-history
                click: !~>
-                  os.runTask \TaskManager
+                  @runTask \TaskManager
 
    onclickTaskbarTask: (task, event) !->
-      if os.task == task
+      if @task == task
          task.minimize!
       else
          task.focus!
@@ -215,7 +227,7 @@ class OS extends Task
 
    onresizeGlobal: (event) !->
       @updateDesktopSize!
-      for task in os.tasks
+      for task in @tasks
          task.updateMinSize!
          task.updateMaxSize!
          task.updateSize!
@@ -286,77 +298,48 @@ class OS extends Task
 
    view: (vnode) ->
       super vnode,
-         m \.OS.Portal,
-            class: m.class do
-               "OS--taskbar-#@taskbarPosition"
-               "OS--fullscreen": @task?fullscreen
-            onmousedown: @onmousedownOS
-            m \.OS-body,
-               m \.OS-tasks,
-                  @tasks.map (task) ~>
-                     if task.isOS
-                        m.fragment do
-                           key: task.pid
-                     else
-                        m task,
-                           key: task.pid
-               m \.OS-taskbar,
-                  style: m.style do
-                     height: @taskbarHeight
-                  oncontextmenu: @oncontextmenuTaskbar
-                  m \.OS-taskbarHome,
-                     m Button,
-                        basic: yes
-                        icon: \fad:home
-                        tooltip: "Home|top,bottom"
-                  m \.OS-taskbarSearch,
-                     m TextInput,
-                        icon: \search
-                        placeholder: "Tìm kiếm"
-                  m \.OS-taskbarTasks,
-                     @getTaskbarPinnedAppsAndTasks!map (item) ~>
-                        if item instanceof Task
-                           if item.skipTaskbar
-                              m \.OS-taskbarTask.OS-taskbarTask--skip,
-                                 class: "OS-taskbarTask--#{item.pid}"
-                                 key: item.pid
-                           else
-                              m Popover,
-                                 key: item.pid
-                                 minWidth: 200
-                                 interactionKind: \contextmenu
-                                 content: (close) ~>
-                                    m Menu,
-                                       basic: yes
-                                       items:
-                                          *  header: item.name
-                                          *  text: "Mở tác vụ mới"
-                                             icon: item.icon
-                                             hidden: item.isOpenSameTask
-                                             click: !~>
-                                                close!
-                                                os.runTask item.name
-                                          ,,
-                                          *  text: "Bỏ ghim taskbar"
-                                             icon: \thumbtack
-                                             click: !~>
-                                                close!
-                                          *  text: "Đóng tác vụ"
-                                             icon: \xmark
-                                             color: \red
-                                             click: !~>
-                                                close!
-                                                item.close!
-                                 m Button,
-                                    class: "OS-taskbarTask OS-taskbarTask--#{item.pid} OS-stopMouseDown"
-                                    active: @task == item
-                                    basic: yes
-                                    icon: item.icon
-                                    onclick: @onclickTaskbarTask.bind void item
-                                    item.title
+         class: m.class do
+            "OS--taskbar-#@taskbarPosition"
+            "OS--fullscreen": @task?fullscreen
+            "OS Portal"
+         style: m.style do
+            "--fontSans": @fontSans
+            "--fontSerif": @fontSerif
+            "--fontMono": @fontMono
+            "--textSize": @textSize
+            "--textContrast": @textContrast
+         onmousedown: @onmousedownOS
+         m \.OS-body,
+            m \.OS-tasks,
+               @tasks.map (task) ~>
+                  if task.isOS
+                     m.fragment do
+                        key: task.pid
+                  else
+                     m task,
+                        key: task.pid
+            m \.OS-taskbar,
+               style: m.style do
+                  height: @taskbarHeight
+               oncontextmenu: @oncontextmenuTaskbar
+               m \.OS-taskbarHomes,
+                  m Button,
+                     basic: yes
+                     icon: \fad:home
+                     tooltip: "Home|top,bottom"
+                  m TextInput,
+                     icon: \search
+                     placeholder: "Tìm kiếm"
+               m \.OS-taskbarTasks,
+                  @getTaskbarPinnedAppsAndTasks!map (item) ~>
+                     if item instanceof Task
+                        if item.skipTaskbar
+                           m \.OS-taskbarTask.OS-taskbarTask--skip,
+                              class: "OS-taskbarTask--#{item.pid}"
+                              key: item.pid
                         else
                            m Popover,
-                              key: item.path
+                              key: item.pid
                               minWidth: 200
                               interactionKind: \contextmenu
                               content: (close) ~>
@@ -364,45 +347,80 @@ class OS extends Task
                                     basic: yes
                                     items:
                                        *  header: item.name
-                                       *  text: "Mở"
+                                       *  text: "Mở tác vụ mới"
                                           icon: item.icon
+                                          hidden: item.isOpenSameTask
                                           click: !~>
                                              close!
-                                             @runTask item.name
+                                             os.runTask item.name
                                        ,,
                                        *  text: "Bỏ ghim taskbar"
                                           icon: \thumbtack
                                           click: !~>
                                              close!
+                                       *  text: "Đóng tác vụ"
+                                          icon: \xmark
+                                          color: \red
+                                          click: !~>
+                                             close!
+                                             item.close!
                               m Button,
-                                 class: "OS-taskbarPinnedApp OS-stopMouseDown"
+                                 class: "OS-taskbarTask OS-taskbarTask--#{item.pid} OS-stopMouseDown"
+                                 active: @task == item
+                                 activeClass: "bg-blue2 text-white"
                                  basic: yes
                                  icon: item.icon
-                                 tooltip: "#{item.name}|top,bottom"
-                                 onclick: @onclickTaskbarPinnedApp.bind void item
-                  m \.OS-taskbarTrays,
+                                 onclick: @onclickTaskbarTask.bind void item
+                                 item.title
+                     else
+                        m Popover,
+                           key: item.path
+                           minWidth: 200
+                           interactionKind: \contextmenu
+                           content: (close) ~>
+                              m Menu,
+                                 basic: yes
+                                 items:
+                                    *  header: item.name
+                                    *  text: "Mở"
+                                       icon: item.icon
+                                       click: !~>
+                                          close!
+                                          @runTask item.name
+                                    ,,
+                                    *  text: "Bỏ ghim taskbar"
+                                       icon: \thumbtack
+                                       click: !~>
+                                          close!
+                           m Button,
+                              class: "OS-taskbarPinnedApp OS-stopMouseDown"
+                              basic: yes
+                              icon: item.icon
+                              tooltip: "#{item.name}|top,bottom"
+                              onclick: @onclickTaskbarPinnedApp.bind void item
+               m \.OS-taskbarTrays,
+                  m Button,
+                     basic: yes
+                     icon: \wifi
+                     tooltip: "Mạng|top,bottom"
+                  m Popover,
+                     maxWidth: 360
+                     content: ~>
+                        m \.p-3,
+                           "Tính năng này hiện chưa khả dụng, vì hiện tại không có cách nào để kiểm soát âm lượng của một trang web."
                      m Button,
                         basic: yes
-                        icon: \wifi
-                        tooltip: "Mạng|top,bottom"
-                     m Popover,
-                        maxWidth: 360
-                        content: ~>
-                           m \.p-3,
-                              "Tính năng này hiện chưa khả dụng, vì hiện tại không có cách nào để kiểm soát âm lượng của một trang web."
-                        m Button,
-                           basic: yes
-                           icon: \volume
-                           tooltip: "Âm thanh|top,bottom"
-                     if @battery
-                        m Button,
-                           basic: yes
-                           icon: @getBatteryIcon!
-                           tooltip: "Pin: #{@batteryLevel * 100}%, #{@batteryCharging and \đang or \không} sạc|top,bottom"
+                        icon: \volume
+                        tooltip: "Âm thanh|top,bottom"
+                  if @battery
                      m Button,
                         basic: yes
-                        tooltip: "#{@upperFirst @time.format "dddd, DD MMMM, YYYY"}|top,bottom"
-                        @time.format "HH:mm, DD/MM/YYYY"
-                     m Button,
-                        basic: yes
-                        icon: \message
+                        icon: @getBatteryIcon!
+                        tooltip: "Pin: #{@batteryLevel * 100}%, #{@batteryCharging and \đang or \không} sạc|top,bottom"
+                  m Button,
+                     basic: yes
+                     tooltip: "#{@upperFirst @time.format "dddd, DD MMMM, YYYY"}|top,bottom"
+                     @time.format "HH:mm, DD/MM/YYYY"
+                  m Button,
+                     basic: yes
+                     icon: \message

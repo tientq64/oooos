@@ -1,22 +1,24 @@
 .OS
-   height: 100%
+   font-family: var(--fontSans)
+   font-size: calc(var(--textSize) * 1px)
+   text-shadow: 0 0 rgba(0, 0, 0, var(--textContrast))
 
 .OS--taskbar-top
-   > .OS-body
+   .OS-body
       flex-direction: column-reverse
 
       > .OS-taskbar
          border-bottom: 1px solid $gray2
 
 .OS--taskbar-bottom
-   > .OS-body
+   .OS-body
       flex-direction: column
 
       > .OS-taskbar
          border-top: 1px solid $gray2
 
 .OS--fullscreen
-   > .OS-body
+   .OS-body
       > .OS-taskbar
          height: 0 !important
          padding-top: 0
@@ -36,26 +38,29 @@
 .OS-taskbar
    padding: 4px 8px
    display: flex
+   justify-content: space-between
    align-items: center
    gap: 8px
    white-space: nowrap
    background: #fff
    z-index: 1
 
+.OS-taskbarHomes
+   display: flex
+   align-items: center
+   gap: 4px
+
 .OS-taskbarTasks
    min-width: 0
    display: flex
-   flex: 1
-   justify-content: center
    align-items: center
    gap: 4px
-   pointer-events: none
 
 .OS-taskbarPinnedApp
    pointer-events: auto
 
 .OS-taskbarTask
-   max-width: 200px
+   width: 200px
    flex: 1
    pointer-events: auto
 
@@ -76,9 +81,15 @@
    background: #fff
    box-shadow: 0 0 0 1px $gray2, $shadow
 
-   > .Menu
+   +dark()
+      background: $gray0
+
+   .Menu
       border-radius: 8px
       background: #fff
+
+      +dark()
+         background: $gray0
 
 .OS-selectMenu
    max-height: 40%

@@ -2,6 +2,7 @@
 
 :root
    --bg-opacity: 1
+   --text-opacity: 1
    --default-border-color: $gray2
 
 *, :before, :after
@@ -14,7 +15,7 @@ html
 body
    height: 100%
    margin: 0
-   font-family: $sans
+   font-family: Arial, sans-serif
    font-size: 16px
    line-height: 1.25
    overflow: hidden
@@ -74,6 +75,7 @@ ul
    align-items: center
    gap: 8px
    font: inherit
+   text-shadow: inherit
    color: $gray0
 
 .Button--fill
@@ -182,6 +184,7 @@ for k, val in $nonGrayColors
    padding: 0 8px
    border: 0
    font: inherit
+   text-shadow: inherit
    background: #0000
    color: $gray0
    outline: 0
@@ -206,6 +209,7 @@ for k, val in $nonGrayColors
    border: 1px solid $gray2
    border-radius: 6px
    font: inherit
+   text-shadow: inherit
    background: #fff
    color: $gray0
    outline: 0
@@ -374,6 +378,9 @@ for k, val in $nonGrayColors
    border: 0
    background: #0000
 
+   +dark()
+      background: #0000
+
 .Menu--compact
    padding: 0
 
@@ -432,11 +439,14 @@ for k, val in $nonGrayColors
    min-height: 34px
    margin-top: 4px
    padding: 4px 8px 0
-   border-top: 1px solid $gray2
+   border-top: 1px solid $gray3
    display: flex
    align-items: center
    font-size: 14px
    font-weight: 700
+
+   +dark()
+      border-top-color: $gray1
 
    &:first-child
       min-height: 30px
@@ -450,7 +460,10 @@ for k, val in $nonGrayColors
 
 .Menu-divider
    margin: 4px 0
-   border-top: 1px solid $gray2
+   border-top: 1px solid $gray3
+
+   +dark()
+      border-top-color: $gray1
 
 .Menubar
    display: flex
@@ -544,13 +557,14 @@ for k, val in $nonGrayColors
 {{styl}}
 
 #m
-   .thumbnail
-      padding: 4px
-      border: 1px solid #0004
+   .image-thumbnail
+      border: 5px solid #fff
       border-radius: 6px
       background: #fff
+      outline: 1px solid $gray2
+      outline-offset: -1px
 
-   .truncate
+   .text-truncate
       text-truncate: ellipsis
 
    .row
@@ -561,7 +575,7 @@ for k, val in $nonGrayColors
       flex-direction: column
 
    for i in 1..12
-      val = floor(i / 12 * 100%)
+      val = floor(i / 12 * 100%, 3)
       :not(.column) > .col-{i}
          width: val
       .column > .col-{i}
@@ -583,20 +597,19 @@ for k, val in $nonGrayColors
       .{val}
          position: val
 
-   for val in 0 25 50 75 100
-      val2 = (val)%
-      .w-{val}
-         width: val2
-      .h-{val}
-         height: val2
-      .min-w-{val}
-         min-width: val2
-      .min-h-{val}
-         min-height: val2
-      .max-w-{val}
-         max-width: val2
-      .max-h-{val}
-         max-height: val2
+   for k, val in $spaces2
+      .w-{k}
+         width: val
+      .h-{k}
+         height: val
+      .min-w-{k}
+         min-width: val
+      .min-h-{k}
+         min-height: val
+      .max-w-{k}
+         max-width: val
+      .max-h-{k}
+         max-height: val
    .w-auto
       width: auto
    .h-auto
@@ -610,12 +623,12 @@ for k, val in $nonGrayColors
    }
    for p, prop in props
       for s, sides in $sides3
-         for size, z in $spaces
+         for z, size in $spaces
             .{p}{s}-{z}
                for side in sides
                   {prop}{side}: size
             if p == m and z
-               .-{p}{s}-{z}
+               .{p}{s}-n{z}
                   for side in sides
                      {prop}{side}: -(size)
          if p == m
@@ -625,6 +638,11 @@ for k, val in $nonGrayColors
 
    .border
       border: 1px solid var(--default-border-color)
+
+   .divide-x > * + *
+      border-left: 1px solid var(--default-border-color)
+   .divide-y > * + *
+      border-top: 1px solid var(--default-border-color)
 
    for s, side in $sides2
       .border{s}
@@ -640,9 +658,11 @@ for k, val in $nonGrayColors
    for k, tones in $colors
       for val, i in tones
          .border-{k}{i}
+         .divide-{k}{i} > * + *
             border-color: val
    for val in "black" "white" "transparent"
       .border-{val}
+      .divide-{val} > * + *
          border-color: unquote(val)
 
    for val, i in 0 4px 6px 8px 16px 32px
@@ -684,13 +704,19 @@ for k, val in $nonGrayColors
    .column.end
       align-items: flex-end
 
-   for val, i in $spaces
-      .gap-{i}
+   for val in between around evenly
+      .{val}
+         justify-content: "space-%s" % val
+   .stretch
+      align-items: stretch
+
+   for k, val in $spaces
+      .gap-{k}
          gap: val
-   for val, i in $spaces
-      .gap-x-{i}
+   for k, val in $spaces
+      .gap-x-{k}
          column-gap: val
-      .gap-y-{i}
+      .gap-y-{k}
          row-gap: val
 
    for val in auto scroll overlay visible hidden
@@ -703,11 +729,11 @@ for k, val in $nonGrayColors
          overflow-y: val
 
    .font-sans
-      font-family: $sans
+      font-family: var(--fontSans)
    .font-serif
-      font-family: $serif
+      font-family: var(--fontSerif)
    .font-mono
-      font-family: $mono
+      font-family: var(--fontMono)
 
    for i in 0 3 4 5 6 7 8
       .lh-{i}
@@ -760,26 +786,35 @@ for k, val in $nonGrayColors
          .bg-{k}{i}
             background-color: $hexToRgba(val, var(--bg-opacity))
          .text-{k}{i}
-            color: val
+            color: $hexToRgba(val, var(--text-opacity))
    for val in "black" "white"
       .bg-{val}
          background-color: $hexToRgba(val, var(--bg-opacity))
       .text-{val}
-         color: unquote(val)
+         color: $hexToRgba(val, var(--text-opacity))
    .bg-transparent
       background-color: transparent
+   .text-transparent
+      background-color: transparent
 
-   for val in 0 25 50 75 100
-      .bg-opacity-{val}
-         --bg-opacity: (val / 100)
-
-   for val in 0 25 50 75 100
-      .opacity-{val}
-         opacity: (val / 100)
+   for i in 0 25 50 75 100
+      val = i / 100
+      .bg-opacity-{i}
+         --bg-opacity: val
+      .text-opacity-{i}
+         --text-opacity: val
+      .opacity-{i}
+         opacity: val
 
    for val in auto smooth
       .scroll-{val}
          scroll-behavior: val
+
+   for val in auto pixelated
+      .image-{val}
+         image-rendering: val
+   .image-contrast
+      image-rendering: -webkit-optimize-contrast
 
    for val in text all auto none
       .select-{val}
@@ -800,3 +835,6 @@ for k, val in $nonGrayColors
    .disabled
       opacity: .6
       pointer-events: none
+
+      .disabled
+         opacity: unset

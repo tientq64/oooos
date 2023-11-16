@@ -54,6 +54,7 @@ TextInput = m.comp do
             @attrs.class
          style: m.style do
             @attrs.style
+         inert: @attrs.disabled
          tooltip: @attrs.tooltip
          if @attrs.icon?
             m Icon,
@@ -63,7 +64,6 @@ TextInput = m.comp do
             m \input.TextInput-input,
                name: @attrs.name
                type: @attrs.type
-               disabled: @attrs.disabled
                min: @attrs.min
                max: @attrs.max
                step: @attrs.step
@@ -71,6 +71,7 @@ TextInput = m.comp do
                maxLength: @attrs.maxLength
                pattern: @attrs.pattern
                required: @attrs.required
+               disabled: @attrs.disabled
                "aria-autocomplete": \both
                placeholder: @attrs.placeholder
                value: @attrs.value

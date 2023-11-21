@@ -8,13 +8,12 @@ class Frme extends Both
       @args = void
 
       @bodyEl = void
-      @listeners = {}
       @answerers = {}
       @listened = no
 
-      @initFTFMethods!
+      @initFrmeMethods!
 
-   initFTFMethods: !->
+   initFrmeMethods: !->
       methodNames = <[
          getEnt
          existsEnt
@@ -36,6 +35,13 @@ class Frme extends Both
          setTaskbarPositionLocked
          setDesktopBgImageFit
          setDesktopBgImagePath
+         setBrightness
+         setNightLight
+         setFontSans
+         setFontSerif
+         setFontMono
+         setTextSize
+         setTextContrast
          minimize
          maximize
          setFullscreen
@@ -55,6 +61,8 @@ class Frme extends Both
          closeMenubarMenu
          showSelectMenu
          closeSelectMenu
+         showDropdownMenu
+         closeDropdownMenu
          showTooltip
          closeTooltip
       ]>
@@ -73,28 +81,19 @@ class Frme extends Both
       window.addEventListener \message @onmessageGlobal
 
    fitContentSize: ->
-      os.dom.classList.add \Frme--useContentSize
-      {width, height} = @bodyEl.getBoundingClientRect!
-      os.dom.classList.remove \Frme--useContentSize
+      if !@useContentSize
+         return
+      @dom.classList.add \Frme--useContentSizeWidth
+      width = @bodyEl.offsetWidth
+      @dom.classList.remove \Frme--useContentSizeWidth
+      @dom.classList.add \Frme--useContentSizeHeight
+      height = @bodyEl.offsetHeight
+      @dom.classList.remove \Frme--useContentSizeHeight
       @send \callWait \fitContentSize width, height
 
    startListen: ->
       @listened = yes
       @send \callWait \startListen yes
-
-   addListener: (name, callback) !->
-      if @isFunc callback
-         listener = @listeners[name]
-         unless listener
-            listener =
-               callbacks: []
-            @listeners[name] = listener
-         listener.callbacks.push callback
-
-   removeListener: (name, callback) !->
-      if @isFunc callback
-         if listener = @listeners[name]
-            @removeArr listener.callbacks, callback
 
    setAnswerer: (name, callback) !->
       if @isFunc
@@ -108,7 +107,7 @@ class Frme extends Both
 
    closeFrme: !->
       setTimeout !~>
-         m.mount os.bodyEl
+         m.mount @bodyEl
          m.mount document.body
       , 400
 
@@ -125,7 +124,7 @@ class Frme extends Both
    onmousedownGlobal: (event) !->
       if event.isTrusted
          eventData = event{clientX, clientY, screenX, screenY, buttons}
-         os.mousedownFrme eventData
+         @mousedownFrme eventData
          @closeTooltip!
 
    onmessageGlobal: (event) !->

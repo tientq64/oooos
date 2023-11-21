@@ -1,5 +1,25 @@
 # CHANGELOG
 
+## [0.9.0] - 21/11/2023
+
+- Thêm kiểu ứng dụng mới: `tray app`. Cũng thêm 2 tray app `PanelTray` và `HomeTray`.
+- Thêm tùy chọn buộc đóng ứng dụng.
+- Thêm các component: `Dropdown`, `NumberInput`, `Slider`.
+- Sửa hàm `fitContentSize`.
+
+## [0.8.0] - 16/11/2023
+
+- Thêm tính năng điều chỉnh độ sáng, làm dịu mắt, phông chữ, cỡ chữ.
+- Sửa lại các utility class CSS cho giống với `Tailwindcss` hơn là `Bootstrap`.
+- Hoàn thiện dần các trang trong app `Settings`.
+
+## [0.7.0] - 10/11/2023
+
+- Cải thiện hàm `createHist`.
+- Thêm hàm `createRouter` để tạo route trong ứng dụng, vì `m.route` của mithril không dùng được trong iframe với src:doc.
+- Thêm app `Settings`, `GameOfLife`.
+- Thêm component `Select`.
+
 ## [0.6.0] - 08/11/2023
 
 - Đổi tên trường `openSameTask` thành `isOpenSameTask` trong khai báo app.

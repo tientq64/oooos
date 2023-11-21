@@ -3,6 +3,7 @@ icon: fad:circle-info
 type: core
 admin: yes
 isModal: yes
-width: 440
+maxWidth: 480
+minWidth: 320
 maxHeight: 400
 useContentSize: yes

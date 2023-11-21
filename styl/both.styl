@@ -154,13 +154,15 @@ for k, val in $nonGrayColors
    align-items: center
    overflow: hidden
    background: #fff
+   transition: .1s $easeOut
+   transition-property: border-color, box-shadow
 
    &:focus-within
       border-color: #0000
-      box-shadow: 0 0 0 1px $blue1, 0 0 0 4px rgba($blue1, .4)
+      box-shadow: 0 0 0 1px $blue1, 0 0 0 4px rgba2($blue1, .4)
 
       +dark()
-         box-shadow: 0 0 0 1px $blue3, 0 0 0 4px rgba($blue3, .4)
+         box-shadow: 0 0 0 1px $blue3, 0 0 0 4px rgba2($blue3, .4)
 
    +dark()
       background: $gray0
@@ -213,13 +215,15 @@ for k, val in $nonGrayColors
    background: #fff
    color: $gray0
    outline: 0
+   transition: .1s $easeOut
+   transition-property: border-color, box-shadow
 
    &:focus
       border-color: #0000
-      box-shadow: 0 0 0 1px $blue1, 0 0 0 4px rgba($blue1, .4)
+      box-shadow: 0 0 0 1px $blue1, 0 0 0 4px rgba2($blue1, .4)
 
       +dark()
-         box-shadow: 0 0 0 1px $blue3, 0 0 0 4px rgba($blue3, .4)
+         box-shadow: 0 0 0 1px $blue3, 0 0 0 4px rgba2($blue3, .4)
 
    +dark()
       background: $gray0
@@ -236,6 +240,7 @@ for k, val in $nonGrayColors
 
 .Radio
 .Checkbox
+   position: relative
    min-height: 20px
    display: inline-flex
    align-items: center
@@ -275,12 +280,15 @@ for k, val in $nonGrayColors
 
 .Radio-input
 .Checkbox-input
-   display: none
+   position: absolute
+   width: 20px
+   height: 20px
+   margin: 0
+   visibility: hidden
 
 .Switch
    height: 22px
    display: inline-flex
-   justify-content: center
    align-items: center
    gap: 12px
 
@@ -355,9 +363,96 @@ for k, val in $nonGrayColors
 .InputGroup--fill
    width: 100%
 
+.NumberInput
+   position: relative
+   width: 200px
+   height: 30px
+
+.NumberInput--fill
+   width: 100%
+
+.NumberInput-input
+   position: absolute
+   width: 100%
+   height: 100%
+   visibility: hidden
+   pointer-events: none
+
+.NumberInput-spins
+   height: 100%
+   display: flex
+   flex-direction: column
+
+.NumberInput-spin
+   height: 50%
+   min-height: 50%
+   overflow: hidden
+
+   &:hover
+      z-index: 1
+
+.NumberInput-spinUp
+   height: calc(50% + 1px)
+   margin-bottom: -1px
+   border-radius: 0 6px 0 0
+
+.NumberInput-spinDown
+   padding-top: 1px
+   border-radius: 0 0 6px 0
+
+.PasswordInput
+   width: 200px
+
+.PasswordInput--fill
+   width: 100%
+
 .PasswordInput--isHidePassword
    .TextInput-input
       text-security: square
+
+.Slider
+   width: 200px
+   padding: 0 6px
+   display: inline-flex
+   flex-direction: column
+   gap: 2px
+
+.Slider-track
+   position: relative
+   width: 100%
+   margin: 6px 0
+   border: 4px solid $gray3
+   border-radius: 8px
+
+   +dark()
+      border-color: $gray1
+
+.Slider-thumb
+   position: absolute
+   width: 20px
+   height: 20px
+   border: 1px solid $gray2
+   border-radius: 6px
+   background: #fff
+   translate: -50% -50%
+   transition: left .1s $easeOut
+
+   +dark()
+      border-color: $gray0
+
+.Slider-labels
+   position: relative
+   height: 14px
+   margin: 0 4px
+   font-size: $fontSizes[5]
+   white-space: nowrap
+
+.Slider-label
+   position: absolute
+   translate: -50% 0
+
+.Slider-input
+   display: none
 
 .Menu
    min-width: 120px
@@ -557,7 +652,7 @@ for k, val in $nonGrayColors
 {{styl}}
 
 #m
-   .image-thumbnail
+   .img-thumbnail
       border: 5px solid #fff
       border-radius: 6px
       background: #fff
@@ -709,6 +804,8 @@ for k, val in $nonGrayColors
          justify-content: "space-%s" % val
    .stretch
       align-items: stretch
+   .baseline
+      align-items: baseline
 
    for k, val in $spaces
       .gap-{k}
@@ -718,6 +815,10 @@ for k, val in $nonGrayColors
          column-gap: val
       .gap-y-{k}
          row-gap: val
+
+   for val in left right auto
+      .float-{val}
+         float: val
 
    for val in auto scroll overlay visible hidden
       .ov-{val}
@@ -784,17 +885,23 @@ for k, val in $nonGrayColors
    for k, tones in $colors
       for val, i in tones
          .bg-{k}{i}
+         .hover-bg-{k}{i}:hover
             background-color: $hexToRgba(val, var(--bg-opacity))
          .text-{k}{i}
+         .hover-text-{k}{i}:hover
             color: $hexToRgba(val, var(--text-opacity))
    for val in "black" "white"
       .bg-{val}
+      .hover-bg-{val}:hover
          background-color: $hexToRgba(val, var(--bg-opacity))
       .text-{val}
+      .hover-text-{val}:hover
          color: $hexToRgba(val, var(--text-opacity))
    .bg-transparent
+   .hover-bg-transparent:hover
       background-color: transparent
    .text-transparent
+   .hover-text-transparent:hover
       background-color: transparent
 
    for i in 0 25 50 75 100
@@ -811,9 +918,9 @@ for k, val in $nonGrayColors
          scroll-behavior: val
 
    for val in auto pixelated
-      .image-{val}
+      .img-{val}
          image-rendering: val
-   .image-contrast
+   .img-contrast
       image-rendering: -webkit-optimize-contrast
 
    for val in text all auto none

@@ -346,7 +346,7 @@ App = m.comp do
                               m \td,
                                  dayjs ent.mtime .format "DD/MM/YYYY HH:mm"
             | \desktop
-               m \.grid.gap-1.h-100p.p-3.bg-center.bg-no-repeat.bg-black,
+               m \.grid.gap-1.h-100p.p-3.bg-center.bg-no-repeat.bg-black.img-contrast,
                   style: m.style do
                      paddingTop: os.taskbarHeight + 12 if os.taskbarPosition == \top
                      paddingBottom: os.taskbarHeight + 12 if os.taskbarPosition == \bottom

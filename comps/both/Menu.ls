@@ -2,7 +2,7 @@ Menu = m.comp do
    oninit: !->
       @item = void
       @popper = void
-      @timerId = void
+      @hoverTimeoutId = void
       @hasValueAttr = \value of @attrs
 
    onbeforeupdate: !->
@@ -26,6 +26,7 @@ Menu = m.comp do
       m.redraw!
 
    closePopper: !->
+      clearTimeout @hoverTimeoutId
       if @popper
          popperEl = @popper.state.elements.popper
          m.mount popperEl
@@ -40,7 +41,7 @@ Menu = m.comp do
             @setItem void
             @closePopper!
             if item.subitems
-               @timerId = setTimeout !~>
+               @hoverTimeoutId = setTimeout !~>
                   @setItem item
                   popperEl = document.createElement \div
                   popperEl.className = "OS-menuPopper"
@@ -63,7 +64,7 @@ Menu = m.comp do
             @setItem void
             os.closeSubmenuMenu!
             if item.subitems
-               @timerId = setTimeout !~>
+               @hoverTimeoutId = setTimeout !~>
                   @setItem item
                   rect = os.getRect targetEl
                   if clickedItem = await os.showSubmenuMenu rect, item.subitems, @hasValueAttr, @attrs.value, os.isFrme
@@ -73,7 +74,7 @@ Menu = m.comp do
                , 200
 
    onmouseleaveMenuItem: (item, event) !->
-      clearTimeout @timerId
+      clearTimeout @hoverTimeoutId
 
    onclickMenuItem: (item, event) !->
       unless item.subitems

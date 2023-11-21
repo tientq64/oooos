@@ -43,7 +43,6 @@ App = m.comp do
                dayjs ent.mtime .format "DD/MM/YYYY HH:mm"
 
    tasks: ->
-      await os.requestPerm \tasksView
       @makeTable do
          *  "Tên"
             "Pid"

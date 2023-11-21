@@ -21,6 +21,7 @@ PasswordInput = m.comp do
    view: ->
       m InputGroup,
          class:
+            "PasswordInput--fill": @attrs.fill
             "PasswordInput--isHidePassword": @isHidePassword
             "PasswordInput"
             @attrs.class
@@ -36,13 +37,15 @@ PasswordInput = m.comp do
                pattern: @attrs.pattern
                required: @attrs.required
                autoFocus: @attrs.autoFocus
+               readOnly: @attrs.readOnly
                placeholder: @attrs.placeholder
                value: @attrs.value
                icon: @attrs.icon
                rightIcon: @attrs.rightIcon
+               tooltip: @attrs.tooltip
                onchange: @attrs.onchange
                oncontextmenu: @oncontextmenuTextInput
          m Button,
             icon: @isHidePassword and \eye or \eye-slash
-            tooltip: "#{@isHidePassword and \Hiện or \Ẩn} mật khẩu|right,top,bottom"
+            tooltip: "#{@isHidePassword and \Hiện or \Ẩn} mật khẩu|right,top,bottom,"
             onclick: @onclickIsHidePassword

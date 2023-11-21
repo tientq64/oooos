@@ -31,6 +31,7 @@ App = m.comp do
                      os.closeTask @task.pid
 
    onTasks: !->
+      @task and= os.tasks.find (.pid == @task.pid)
       @lastUpdatedTime = Date.now!
 
    onmousedownTasks: (event) !->

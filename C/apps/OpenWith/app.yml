@@ -4,6 +4,6 @@ type: core
 admin: yes
 isModal: yes
 width: 420
-height: 600
+maxHeight: 600
 minWidth: 420
 useContentSize: yes

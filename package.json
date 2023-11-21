@@ -1,11 +1,9 @@
 {
    "name": "oooos",
    "displayName": "OooOS",
-   "version": "0.8.0",
+   "version": "0.9.0",
    "description": "Fake operating system running in browser.",
-   "author": {
-      "name": "tientq64"
-   },
+   "author": "tientq64",
    "keywords": [
       "os",
       "operating-system",

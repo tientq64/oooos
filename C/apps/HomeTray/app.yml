@@ -1,0 +1,9 @@
+name: HomeTray
+icon: fad:home
+type: core
+admin: yes
+isTrayApp: yes
+isLeftTrayApp: yes
+width: 400
+height: 640
+maxHeight: 640

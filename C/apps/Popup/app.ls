@@ -5,12 +5,9 @@ App = m.comp do
       @message = os.args.message
       @updateMessage!
       @val = @opts.defaultValue
-      @willFitContentSize = yes
 
-   onupdate: !->
-      if @willFitContentSize
-         os.fitContentSize!
-         @willFitContentSize = no
+   oncreate: !->
+      os.fitContentSize!
 
    updateMessage: !->
       if @opts.isMarkdown
@@ -21,7 +18,6 @@ App = m.comp do
 
    onchangeInput: (event) !->
       @val = event.target.value
-      @willFitContentSize = yes
 
    onsubmit: (event) !->
       event.preventDefault!

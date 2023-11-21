@@ -1,4 +1,5 @@
 name: Terminal
 icon: fad:rectangle-terminal
+type: core
 admin: yes
 darkMode: yes

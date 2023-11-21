@@ -111,11 +111,32 @@ HomePage = m.comp do
                "HomePage"
 
 DisplayPage = m.comp do
+   oninit: !->
+      os.requestPerm \brightnessView
+      os.requestPerm \nightLightView
+
+   onValueChangeBrightness: (val) !->
+      os.setBrightness val
+
+   onchangeNightLight: (event) !->
+      os.setNightLight event.target.checked
+
    view: ->
       m \.column.h-100p.divide-y.divide-gray3,
          m \.row.between.py-2,
             m \.row.middle.h-30px,
-               "DisplayPage"
+               "Độ sáng màn hình"
+            m Slider,
+               max: 1
+               step: 0.1
+               value: os.brightness
+               onValueChange: @onValueChangeBrightness
+         m \.row.between.py-2,
+            m \.row.middle.h-30px,
+               "Làm dịu mắt"
+            m Switch,
+               checked: os.nightLight
+               onchange: @onchangeNightLight
 
 ThemePage = m.comp do
    oninit: !->
@@ -151,7 +172,7 @@ ThemePage = m.comp do
             m \.row.middle.h-30px,
                "Hình nền"
             m \.col-0,
-               m \img.image-thumbnail.image-contrast,
+               m \img.img-thumbnail.img-contrast,
                   src: os.desktopBgImageDataUrl
                   height: 120
          m \.row.between.py-2,
@@ -165,18 +186,80 @@ ThemePage = m.comp do
                      tooltip: "#{color.text}|top"
          m \.row.between.middle.py-2,
             m \.row.middle.h-30px,
-               "Kéo giãn hình nền"
+               "Kiểu kéo giãn hình nền"
             m Select,
                value: os.desktopBgImageFit
                items: os.desktopBgImageFits
                onValueChange: @onValueChangeDesktopBgImageFit
 
 FontPage = m.comp do
+   oninit: !->
+      os.requestPerm \fontView
+      os.requestPerm \textView
+
+   onValueChangeFontSans: (val) !->
+      os.setFontSans val
+
+   onValueChangeFontSerif: (val) !->
+      os.setFontSerif val
+
+   onValueChangeFontMono: (val) !->
+      os.setFontMono val
+
+   onValueChangeTextSize: (val) !->
+      os.setTextSize val
+
+   onValueChangeTextContrast: (val) !->
+      os.setTextContrast val
+
    view: ->
       m \.column.h-100p.divide-y.divide-gray3,
          m \.row.between.py-2,
             m \.row.middle.h-30px,
-               "FontPage"
+               "Phông chữ Sans-serif"
+            m Select,
+               value: os.fontSans
+               items: os.fonts?map (font) ~>
+                  text: font.name
+                  value: font.name
+                  visible: font.type == \sans
+               onValueChange: @onValueChangeFontSans
+         m \.row.between.py-2,
+            m \.row.middle.h-30px,
+               "Phông chữ Serif"
+            m Select,
+               value: os.fontSerif
+               items: os.fonts?map (font) ~>
+                  text: font.name
+                  value: font.name
+                  visible: font.type == \serif
+               onValueChange: @onValueChangeFontSerif
+         m \.row.between.py-2,
+            m \.row.middle.h-30px,
+               "Phông chữ Monospace"
+            m Select,
+               value: os.fontMono
+               items: os.fonts?map (font) ~>
+                  text: font.name
+                  value: font.name
+                  visible: font.type == \mono
+               onValueChange: @onValueChangeFontMono
+         m \.row.between.py-2,
+            m \.row.middle.h-30px,
+               "Kích thước văn bản"
+            m Slider,
+               min: 13
+               max: 24
+               value: os.textSize
+               onValueChange: @onValueChangeTextSize
+         m \.row.between.py-2,
+            m \.row.middle.h-30px,
+               "Tăng thêm độ sắc nét cho văn bản"
+            m Slider,
+               max: 1
+               step: 0.1
+               value: os.textContrast
+               onValueChange: @onValueChangeTextContrast
 
 TasksPage = m.comp do
    view: ->
@@ -265,11 +348,51 @@ AccountPage = m.comp do
                "AccountPage"
 
 AppsPage = m.comp do
+   oninit: !->
+      os.requestPerm \appsView
+
    view: ->
       m \.column.h-100p.divide-y.divide-gray3,
-         m \.row.between.py-2,
+         m \.py-2,
             m \.row.middle.h-30px,
-               "AppsPage"
+               "Các ứng dụng đã cài đặt"
+            m Table,
+               interactive: yes
+               m \thead,
+                  m \tr,
+                     m \th,
+                        "Tên"
+                     m \th,
+                        "Đường dẫn"
+                     m \th,
+                        "Loại"
+                     m \th
+               m \tbody,
+                  os.apps?map (app) ~>
+                     m \tr,
+                        key: app.path
+                        m \td,
+                           m Icon,
+                              class: "mr-2"
+                              name: app.icon
+                           app.name
+                        m \td,
+                           app.path
+                        m \td,
+                           app.type
+                        m \td,
+                           m Dropdown,
+                              basic: yes
+                              small: yes
+                              icon: \ellipsis
+                              items:
+                                 *  text: "Mở ứng dụng"
+                                    click: !~>
+                                       os.runTask app.name
+                                 ,,
+                                 *  text: "Gỡ cài đặt"
+                                    icon: \trash-can
+                                    color: \red
 
 TimePage = m.comp do
    view: ->

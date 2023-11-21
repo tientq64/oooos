@@ -22,6 +22,8 @@ Icon = m.comp do
                width: @size
                height: @size
                @attrs.style
+      | \none
+         void
       else
          m \.Icon.Icon--font,
             class: m.class do

@@ -18,21 +18,21 @@ class OS extends Task
             value: \bottom
             isDefault: yes
       @taskbarPosition = \bottom
-      @taskbarPositionLocked = yes
+      @taskbarPositionLocked = no
       @taskbarHeight = 39
 
       @desktopWidth = void
       @desktopHeight = void
       @desktopTask = void
       @desktopBgImageFits =
-         *  text: "Cover"
+         *  text: "Tràn màn hình"
             value: \cover
             isDefault: yes
-         *  text: "Contain"
+         *  text: "Vừa màn hình"
             value: \contain
-         *  text: "Fill"
+         *  text: "Vừa các cạnh"
             value: \fill
-         *  text: "None"
+         *  text: "Kích thước gốc"
             value: \none
       @desktopBgImageFit = \cover
       @desktopBgImagePath = void
@@ -51,23 +51,42 @@ class OS extends Task
 
       @nightLight = no
 
+      @fonts =
+         *  name: "Arial"
+            type: \sans
+         *  name: "Segoe UI"
+            type: \sans
+         *  name: "Roboto"
+            type: \sans
+         *  name: "Noto Serif"
+            type: \serif
+         *  name: "D2Coding"
+            type: \mono
+         *  name: "PragmataPro Mono"
+            type: \mono
+
       @fontSans = "Arial"
       @fontSerif = "Noto Serif"
       @fontMono = "D2Coding"
 
       @textSize = 16
-      @textContrast = 1
+      @textContrast = 0
 
       super app, env
 
       @isTask = no
 
+      @osName = @name
+      @osVersion = @version
+      @osAuthor = @author
+
       @submenuMenuClose = void
       @contextMenuClose = void
       @menubarMenuClose = void
       @selectMenuClose = void
+      @dropdownMenuClose = void
       @tooltipClose = void
-      @tooltipTimerId = void
+      @tooltipTimeoutId = void
 
    oncreate: (vnode) !->
       await super vnode
@@ -81,7 +100,7 @@ class OS extends Task
       @loaded = yes
       m.redraw!
 
-      # @runTask \Settings
+      @runTask \Settings
 
    updateDesktopSize: !->
       @desktopWidth = innerWidth
@@ -147,18 +166,29 @@ class OS extends Task
       await @waitListenedTask pid
       m.redraw!
 
-   updateFocusedTask: (isSort) !->
+   updateFocusedTask: (isFocusNextTask, isUpdateZ) !->
+      prevTask = @task
       tasks = @tasks
-      if isSort
-         tasks .= toSorted (taskA, taskB) ~>
-            taskA.z - taskB.z
+      tasks .= toSorted (taskA, taskB) ~>
+         taskA.z - taskB.z
+      if isUpdateZ
          for task, i in tasks
             task.z = i
-      @task = tasks.findLast (task) ~>
-         task.focusable and !task.minimized
+         @sendPermTasksAll!
+      if isFocusNextTask
+         nextTask = tasks.findLast (task) ~>
+            task.focusable and !task.minimized
+      else
+         nextTask = void
+      if prevTask != nextTask
+         if prevTask and prevTask.isTrayApp
+            prevTask.minimize yes
+         @task = nextTask
       m.redraw!
 
-   getTaskbarPinnedAppsAndTasks: ->
+   getTaskbarPinnedAppsAndTasks: (isTrayApp, isLeftTrayApp) ->
+      isTrayApp = Boolean isTrayApp
+      isLeftTrayApp = Boolean isLeftTrayApp
       pinnedApps = @apps
          .filter (app) ~>
             app.pinnedTaskbar
@@ -169,7 +199,11 @@ class OS extends Task
       tasks = @tasks
          .filter (task) ~>
             !pinnedApps.includes task
-      [...pinnedApps, ...tasks]
+      items = pinnedApps
+         .concat tasks
+         .filter (task) ~>
+            task.isTrayApp == isTrayApp and task.isLeftTrayApp == isLeftTrayApp
+      items
 
    onlevelchangeBattery: !->
       @batteryLevel = Number @battery.level.toFixed 2
@@ -323,15 +357,26 @@ class OS extends Task
                   height: @taskbarHeight
                oncontextmenu: @oncontextmenuTaskbar
                m \.OS-taskbarHomes,
-                  m Button,
-                     basic: yes
-                     icon: \fad:home
-                     tooltip: "Home|top,bottom"
-                  m TextInput,
-                     icon: \search
-                     placeholder: "Tìm kiếm"
+                  @getTaskbarPinnedAppsAndTasks yes yes .map (item) ~>
+                     if item instanceof Task
+                        m Button,
+                           key: item.pid
+                           class: "OS-taskbarTask OS-trayTask OS-leftTrayTask OS-taskbarTask--#{item.pid} OS-stopMouseDown"
+                           active: @task == item
+                           activeClass: "bg-blue2 text-white"
+                           basic: yes
+                           icon: item.icon
+                           onclick: @onclickTaskbarTask.bind void item
+                     else
+                        m Button,
+                           key: item.path
+                           class: "OS-taskbarPinnedApp OS-stopMouseDown"
+                           basic: yes
+                           icon: item.icon
+                           tooltip: "#{item.name}|top,bottom"
+                           onclick: @onclickTaskbarPinnedApp.bind void item
                m \.OS-taskbarTasks,
-                  @getTaskbarPinnedAppsAndTasks!map (item) ~>
+                  @getTaskbarPinnedAppsAndTasks no no .map (item) ~>
                      if item instanceof Task
                         if item.skipTaskbar
                            m \.OS-taskbarTask.OS-taskbarTask--skip,
@@ -358,6 +403,13 @@ class OS extends Task
                                           icon: \thumbtack
                                           click: !~>
                                              close!
+                                       *  text: "Buộc đóng tác vụ"
+                                          icon: \octagon-xmark
+                                          color: \red
+                                          click: !~>
+                                             close!
+                                             item.forceClose!
+                                       ,,
                                        *  text: "Đóng tác vụ"
                                           icon: \xmark
                                           color: \red
@@ -382,7 +434,7 @@ class OS extends Task
                                  basic: yes
                                  items:
                                     *  header: item.name
-                                    *  text: "Mở"
+                                    *  text: "Mở ứng dụng"
                                        icon: item.icon
                                        click: !~>
                                           close!
@@ -407,7 +459,7 @@ class OS extends Task
                      maxWidth: 360
                      content: ~>
                         m \.p-3,
-                           "Tính năng này hiện chưa khả dụng, vì hiện tại không có cách nào để kiểm soát âm lượng của một trang web."
+                           "Tính năng này hiện không khả dụng, vì hiện tại chưa có cách nào để kiểm soát âm lượng của một trang web."
                      m Button,
                         basic: yes
                         icon: \volume
@@ -421,6 +473,27 @@ class OS extends Task
                      basic: yes
                      tooltip: "#{@upperFirst @time.format "dddd, DD MMMM, YYYY"}|top,bottom"
                      @time.format "HH:mm, DD/MM/YYYY"
-                  m Button,
-                     basic: yes
-                     icon: \message
+                  @getTaskbarPinnedAppsAndTasks yes no .map (item) ~>
+                     if item instanceof Task
+                        m Button,
+                           key: item.pid
+                           class: "OS-taskbarTask OS-trayTask OS-rightTrayTask OS-taskbarTask--#{item.pid} OS-stopMouseDown"
+                           active: @task == item
+                           activeClass: "bg-blue2 text-white"
+                           basic: yes
+                           icon: item.icon
+                           onclick: @onclickTaskbarTask.bind void item
+                     else
+                        m Button,
+                           key: item.path
+                           class: "OS-taskbarPinnedApp OS-stopMouseDown"
+                           basic: yes
+                           icon: item.icon
+                           tooltip: "#{item.name}|top,bottom"
+                           onclick: @onclickTaskbarPinnedApp.bind void item
+            m \.OS-nightLight,
+               style:
+                  opacity: @nightLight and 1 or 0
+            m \.OS-brightness,
+               style:
+                  opacity: 1 - @brightness

@@ -25,6 +25,9 @@ Button = m.comp do
          tooltip: @attrs.tooltip
          onclick: @attrs.onclick
          oncontextmenu: @attrs.oncontextmenu
+         onpointerdown: @attrs.onpointerdown
+         onpointermove: @attrs.onpointermove
+         onlostpointercapture: @attrs.onlostpointercapture
          if @attrs.icon?
             m Icon,
                class: "Button-icon Button-leftIcon"

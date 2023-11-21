@@ -4,7 +4,8 @@ Select = m.comp do
       @isShowPopper = no
 
    onbeforeupdate: (old) !->
-      [@items, @clicks, @groups, @allItems] = os.formatMenuItems @attrs.items
+      @attrs.rightIcon ?= \sort
+      [@items,,, @allItems] = os.formatMenuItems @attrs.items
       @items ?= []
       @hasSomeIconAllItems = @allItems.some (.icon?)
       if @controlled
@@ -41,11 +42,17 @@ Select = m.comp do
             @attrs.style
          width: @attrs.width
          height: @attrs.height
+         fill: @attrs.fill
+         basic: @attrs.basic
+         small: @attrs.small
          active: @isShowPopper
          disabled: @attrs.disabled
          icon: @item?icon ? (@hasSomeIconAllItems and \blank or void)
-         rightIcon: \sort
+         rightIcon: @attrs.rightIcon
          tooltip: @attrs.tooltip
          onclick: @onclick
          oncontextmenu: @attrs.oncontextmenu
-         @item?text
+         if @children.length
+            that
+         else
+            @item?text

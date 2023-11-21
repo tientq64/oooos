@@ -14,33 +14,39 @@ TextInput = m.comp do
          *  beginGroup: \TextInput
          *  text: "Hoàn tác"
             icon: \arrow-rotate-left
+            label: "Ctrl+Z"
             click: !~>
                @input.dom.focus!
                document.execCommand \undo
          *  text: "Làm lại"
             icon: \arrow-rotate-right
+            label: "Ctrl+Y"
             click: !~>
                @input.dom.focus!
                document.execCommand \redo
          ,,
          *  text: "Cắt"
             icon: \scissors
+            label: "Ctrl+X"
             click: !~>
                @input.dom.focus!
                document.execCommand \cut
          *  text: "Sao chép"
             icon: \copy
+            label: "Ctrl+C"
             click: !~>
                @input.dom.focus!
                document.execCommand \copy
          *  text: "Dán"
             icon: \paste
+            label: "Ctrl+V"
             click: !~>
                @input.dom.focus!
                text = await navigator.clipboard.readText!
                document.execCommand \insertText,, text
          ,,
          *  text: "Chọn tất cả"
+            label: "Ctrl+A"
             click: !~>
                @input.dom.focus!
                document.execCommand \selectAll
@@ -72,6 +78,7 @@ TextInput = m.comp do
                pattern: @attrs.pattern
                required: @attrs.required
                disabled: @attrs.disabled
+               readOnly: @attrs.readOnly
                "aria-autocomplete": \both
                placeholder: @attrs.placeholder
                value: @attrs.value

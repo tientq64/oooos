@@ -33,7 +33,7 @@
 .OS-tasks
    position: relative
    flex: 1
-   z-index: 0
+   overflow: hidden
 
 .OS-taskbar
    padding: 4px 8px
@@ -75,6 +75,9 @@
    align-items: center
    gap: 4px
 
+.OS-trayTask
+   width: auto
+
 .OS-menuPopper
    width: max-content
    border-radius: 6px
@@ -92,6 +95,7 @@
          background: $gray0
 
 .OS-selectMenu
+.OS-dropdownMenu
    max-height: 40%
    display: flex
    z-index: 1020
@@ -120,6 +124,23 @@
 .OS-tooltip--light
    background: $gray4
    color: $gray0
+
+.OS-nightLight
+   position: absolute
+   inset: 0
+   background: #fff9e8
+   mix-blend-mode: multiply
+   transition: opacity 1s $easeOut
+   pointer-events: none
+   z-index: 1980
+
+.OS-brightness
+   position: absolute
+   inset: 0
+   background: #000d
+   transition: opacity .3s $easeOut
+   pointer-events: none
+   z-index: 1990
 
 .Task
    position: absolute
@@ -168,16 +189,25 @@
       margin: 0
       border-radius: 0
 
-.Task--useContentSize
+.Task--useContentSizeWidth
+   > .Task-body
+      > .Task-frame
+         width: fit-content
+
+.Task--useContentSizeHeight
    > .Task-body
       > .Task-frame
          height: auto !important
+         max-height: unset
 
 .Task--noHeader
    > .Task-header
       height: 0
       margin: 0
       overflow: hidden
+
+.Task--noAnimation
+   animation-duration: 0s !important
 
 .Task--loading
    > .Task-body
@@ -231,7 +261,6 @@
    transition-property: margin, border-radius
    transition-duration: .5s
    transition-timing-function: $easeOut
-   z-index: 1
 
    +dark()
       background: $gray0

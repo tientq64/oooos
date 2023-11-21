@@ -1,0 +1,8 @@
+name: PanelTray
+icon: message
+type: core
+admin: yes
+isTrayApp: yes
+minWidth: 400
+maxHeight: 640
+useContentSize: yes

@@ -15,33 +15,39 @@ Textarea = m.comp do
          *  beginGroup: \TextInput
          *  text: "Hoàn tác"
             icon: \arrow-rotate-left
+            label: "Ctrl+Z"
             click: !~>
                @dom.focus!
                document.execCommand \undo
          *  text: "Làm lại"
             icon: \arrow-rotate-right
+            label: "Ctrl+Y"
             click: !~>
                @dom.focus!
                document.execCommand \redo
          ,,
          *  text: "Cắt"
             icon: \scissors
+            label: "Ctrl+X"
             click: !~>
                @dom.focus!
                document.execCommand \cut
          *  text: "Sao chép"
             icon: \copy
+            label: "Ctrl+C"
             click: !~>
                @dom.focus!
                document.execCommand \copy
          *  text: "Dán"
             icon: \paste
+            label: "Ctrl+V"
             click: !~>
                @dom.focus!
                text = await navigator.clipboard.readText!
                document.execCommand \insertText,, text
          ,,
          *  text: "Chọn tất cả"
+            label: "Ctrl+A"
             click: !~>
                @dom.focus!
                document.execCommand \selectAll

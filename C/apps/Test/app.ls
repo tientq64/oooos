@@ -1,5 +1,6 @@
 App = m.comp do
    oninit: !->
+      @num = 8.3
       @text = "Nidoqueen"
       @bool = yes
       @boolTestPatchDom = no
@@ -215,6 +216,48 @@ App = m.comp do
                "Đoạn này xuất hiện với mục đích test bản vá DOM."
          m \span,
             "@bool: #@bool"
+
+         m \h3.col-12 "Slider:"
+         m Slider
+         m Slider,
+            max: 9.1
+            value: @num
+            onValueChange: (@num) !~>
+         m Slider,
+            min: 4.3
+            max: 16.1
+            step: 2.7
+            value: @num
+            onValueChange: (@num) !~>
+         m Slider,
+            min: 24.3
+            max: 66.1
+            step: 2.7
+            onValueChange: (@num) !~>
+         m Slider,
+            min: 2
+            max: 2
+         m Slider,
+            min: 2
+            max: 0
+         m Slider,
+            min: 2
+            max: NaN
+
+         m \h3.col-12 "NumberInput:"
+         m NumberInput
+         m NumberInput,
+            max: 24
+            value: @num
+            onValueChange: (@num) !~>
+         m \span,
+            @num
+         m \span,
+            typeof @num
+         m Button,
+            onclick: !~>
+               @num = "st"
+            "Set num='st'"
 
          m \h3.col-12 "Select:"
          m Select
@@ -469,5 +512,5 @@ App = m.comp do
          m \h3.col-12 "Image:"
          m \img,
             src: \https://i.ibb.co/gSDp1bR/i14745531949.jpg
-         m \img.image-thumbnail,
+         m \img.img-thumbnail,
             src: \https://www.serebii.net/dungeon2/headshot/448.png

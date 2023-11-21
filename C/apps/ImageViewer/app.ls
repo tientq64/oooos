@@ -34,12 +34,13 @@ App = m.comp do
          *  Toolbar: Toolbar
 
    showAppInfo: !->
-      os.alert """
-         **Tên:** ImageViewer
+      os.alert do
+         """
+            **Tên:** ImageViewer
 
-         **Các thư viện được sử dụng:**
-         -  [@fancyapps/ui@5.0.25](https://fancyapps.com/panzoom/)
-      """,
+            **Các thư viện được sử dụng:**
+            -  [@fancyapps/ui@5.0.25](https://fancyapps.com/panzoom/)
+         """
          isMarkdown: yes
 
    onEnts: (ents) !->
@@ -76,6 +77,44 @@ App = m.comp do
                            enabled: @loaded
                            click: !~>
                               @panzoom.toggleFS!
+                        ,,
+                        *  text: "Phóng to"
+                           icon: \magnifying-glass-plus
+                           enabled: @loaded and @panzoom.canZoomIn!
+                           click: !~>
+                              @panzoom.zoomIn!
+                        *  text: "Thu nhỏ"
+                           icon: \magnifying-glass-minus
+                           enabled: @loaded and @panzoom.canZoomOut!
+                           click: !~>
+                              @panzoom.zoomOut!
+                        ,,
+                        *  text: "Xoay trái 90 độ"
+                           icon: \rotate-left
+                           enabled: @loaded
+                           click: !~>
+                              @panzoom.rotateCCW!
+                        *  text: "Xoay phải 90 độ"
+                           icon: \rotate-right
+                           enabled: @loaded
+                           click: !~>
+                              @panzoom.rotateCW!
+                        ,,
+                        *  text: "Lật dọc"
+                           icon: \arrows-left-right
+                           enabled: @loaded
+                           click: !~>
+                              @panzoom.flipX!
+                        *  text: "Lật ngang"
+                           icon: \arrows-up-down
+                           enabled: @loaded
+                           click: !~>
+                              @panzoom.flipY!
+                        ,,
+                        *  text: "Đặt lại chế độ xem"
+                           icon: \rotate
+                           click: !~>
+                              @panzoom.reset!
                   *  text: "Tùy chọn"
                      subitems:
                         *  text: "Đặt làm hình nền desktop"

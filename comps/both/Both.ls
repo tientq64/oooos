@@ -16,11 +16,16 @@ class Both
       @importedLibs = Object.create null
 
       @resolvers = {}
+      @listeners = {}
 
    oncreate: (vnode) !->
       @dom = vnode.dom
 
       window.addEventListener \contextmenu @oncontextmenuGlobalBoth
+
+   castStr: (str) ->
+      if str? => String str
+      else ""
 
    upperFirst: (val) ->
       val = String val
@@ -38,12 +43,17 @@ class Both
       html.replace /[&<>"']/g (chr) ~>
          "&##{chr.charCodeAt 0};"
 
+   castNum: (val, defaultVal = 0) ->
+      | isNaN val => defaultVal
+      | val? => Number val
+      else defaultVal
+
    clamp: (num, min, max) ->
-      if &length == 2
-         [max, min] = [min 0]
+      max = [, 1 min, max][&length]
+      min = [, 0 0 min][&length]
       num =
-         if num < min => min
-         else if num > max => max
+         | num < min => min
+         | num > max => max
          else num
       Number num
 
@@ -59,8 +69,8 @@ class Both
       @incrId += 1
 
    castArr: (arr) ->
-      if Array.isArray arr => arr
-      else if arr? => [arr]
+      | Array.isArray arr => arr
+      | arr? => [arr]
       else []
 
    castNewArr: (arr) ->
@@ -81,8 +91,8 @@ class Both
       Array.from new Set arr
 
    castObj: (obj, key) ->
-      if typeof! obj == \Object => obj
-      else if obj? and key != void => (key): obj
+      | typeof! obj == \Object => obj
+      | obj? and key != void => (key): obj
       else {}
 
    castNewObj: (obj, key) ->
@@ -190,8 +200,26 @@ class Both
    castPath: (ent) ->
       ent.path or ent
 
+   addListener: (name, callback) !->
+      if @isFunc callback
+         listener = @listeners[name]
+         unless listener
+            listener =
+               callbacks: []
+            @listeners[name] = listener
+         listener.callbacks.push callback
+
+   removeListener: (name, callback) !->
+      if @isFunc callback
+         if listener = @listeners[name]
+            @removeArr listener.callbacks, callback
+
    formatIconName: (name) ->
-      if name? and name != ""
+      if name == no
+         kind = \none
+      else if name in [void null "" \blank]
+         kind = \blank
+      else
          [, kind, val, color] = /^(?:(\w+):)?(.+?)(?:!([\da-fA-F]{3,8}))?$/.exec name
          if /^\d{2,}$/.test val
             kind ?= \flaticon
@@ -201,8 +229,6 @@ class Both
             | \https \http => "#kind:#val"
             else val
          color = \# + color
-      else
-         kind = \blank
       [kind, val, color]
 
    formatMenuItems: (items, parentId, groups) ->
@@ -429,9 +455,14 @@ class Both
       | \fill => "100% 100%"
       | \none => \auto
 
-   getRect: (el) ->
+   getRect: (el, isReturnArr) ->
+      if typeof el == \string
+         el = document.querySelector el
       rect = el.getBoundingClientRect!
-      rect{x, y, width, height, left, top, right, bottom}
+      if isReturnArr
+         [rect.x, rect.y, rect.width, rect.height, rect.right, rect.bottom]
+      else
+         rect{x, y, width, height, right, bottom, left, top}
 
    makeRectFromXY: (x, y) ->
       x: x
@@ -472,10 +503,10 @@ class Both
          @contextMenuResolves.push resolve
 
    import: (...libs) !->
-      await Promise.all libs.map (lib, i) ~>
-         promise = os.importedLibs[lib]
-         unless promise
-            promise = new Promise (resolve) !~>
+      await Promise.all libs.map (lib, i) !~>
+         result = os.importedLibs[lib]
+         if result == void
+            result = new Promise (resolve, reject) !~>
                [, kind, name, ext] = lib.match /^(?:(npm|git|sky):)?(.+?)(?:!(js|css))?$/
                kind or= \npm
                ext or= name.endsWith \.css and \css or \js
@@ -492,25 +523,39 @@ class Both
                | \tag
                   if ext == \js
                      el = document.createElement \script
-                     el.onload = resolve
-                     el.onerror = el~remove
+                     el.onload = !~>
+                        resolve!
+                     el.onerror = (,,,, err) !~>
+                        el.remove!
+                        delete os.importedLibs[lib]
+                        reject err
                      el.src = url
                      document.body.appendChild el
                   else
                      el = document.createElement \link
                      el.rel = \stylesheet
-                     el.onload = resolve
-                     el.onerror = el~remove
+                     el.onload = !~>
+                        resolve!
+                     el.onerror = (,,,, err) !~>
+                        el.remove!
+                        delete os.importedLibs[lib]
+                        reject err
                      el.href = url
                      stylLibEl.after el
                | \import
-                  modl = await import url
-                  varName = name
-                     .replace /^[^a-z\d]+|(?<=.)@[\d.]+$/g ""
-                     .replace /[^a-z\d]+([a-z])/g (.at -1 .toUpperCase!)
-                  window[varName] = modl
-                  resolve!
-         promise
+                  try
+                     modl = await import url
+                     varName = name
+                        .replace /^[^a-z\d]+|(?<=.)@[\d.]+$/g ""
+                        .replace /[^a-z\d]+([a-z])/g (.at -1 .toUpperCase!)
+                     window[varName] = modl
+                     resolve!
+                  catch
+                     delete os.importedLibs[lib]
+                     reject e
+            os.importedLibs[lib] = result
+         await result
+         m.redraw!
 
    wait: (ms) ->
       new Promise (resolve) !~>

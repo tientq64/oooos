@@ -23,6 +23,8 @@ class Task extends Both
       @admin = Boolean env.admin ? app.admin ? no
       @title = String env.title ? app.title ? @name
       @isModal = Boolean env.isModal ? app.isModal ? no
+      @isTrayApp = Boolean env.isTrayApp ? app.isTrayApp ? no
+      @isLeftTrayApp = Boolean env.isLeftTrayApp ? app.isLeftTrayApp ? no
       @focusable = Boolean env.focusable ? app.focusable ? yes
       @minWidth$ = Number env.minWidth ? app.minWidth or 200
       @minHeight$ = Number env.minHeight ? app.minHeight or 80
@@ -41,8 +43,9 @@ class Task extends Both
       @fullscreen = Boolean env.fullscreen ? app.fullscreen ? no
       @useContentSize = Boolean env.useContentSize ? app.useContentSize ? no
       @darkMode = Boolean env.darkMode ? app.darkMode ? no
-      @noHeader = Boolean env.noHeader ? app.noHeader ? no
+      @noHeader = Boolean env.noHeader ? app.noHeader ? @isTrayApp
       @skipTaskbar = Boolean env.skipTaskbar ? app.skipTaskbar ? no
+      @noAnimation = Boolean env.noAnimation ? app.noAnimation ? @isTrayApp
       @hidden = Boolean env.hidden ? app.hidden ? @useContentSize
       @autoListen = Boolean env.autoListen ? app.autoListen ? yes
       @supportedExts = app.supportedExts
@@ -51,6 +54,8 @@ class Task extends Both
       @perms = @createTaskPerms!
 
       @isSandbox = @type !in [\os \core]
+      @widthDefined = env.width? or app.width?
+      @heightDefined = env.height? or app.height?
       @isAskingClose = no
       @closed = no
       @closedResolve = void
@@ -66,6 +71,7 @@ class Task extends Both
       @bodyEl = void
       @frameEl = void
       @postMessage = void
+      @trayPopper = void
       @loaded = no
 
       os.tasks.push @
@@ -87,7 +93,19 @@ class Task extends Both
       @updateXYDom!
       @updateMinimizeDom yes if @minimized
 
+      if @isTrayApp
+         el = document.querySelector ".OS-taskbarTask--#@pid"
+         val = @isLeftTrayApp and \end or \start
+         @trayPopper = @createPopper el, @dom,
+            placement: "top-#val"
+            flips: ["bottom-#val"]
+
       switch @type
+      | \os
+         if @autoListen
+            @startListen yes
+         @setLoaded yes
+
       | \core
          styl = stylD
          try
@@ -101,15 +119,23 @@ class Task extends Both
                #{@indent code, 1 yes}
                App
          """
+         osProxy = new Proxy {},
+            get: (, prop) ~>
+               if prop of @
+                  @[prop]
+               else
+                  os[prop]
          code = livescript.compile code,
             bare: yes
          frameEl = document.createElement \div
          frameEl.className = \Task-frame
          @frameEl = frameEl
          @bodyEl.prepend frameEl
-         comp = (eval code) void @
+         comp = await (eval code) void osProxy
          m.mount frameEl, comp
-         @loaded = yes
+         if @autoListen
+            @startListen yes
+         @setLoaded yes
 
       | \normal
          importVar = eval importVarCode
@@ -141,6 +167,8 @@ class Task extends Both
          frameEl.srcdoc = html
          @frameEl = frameEl
          @bodyEl.prepend frameEl
+
+      @trayPopper?update!
 
       m.redraw!
 
@@ -198,6 +226,10 @@ class Task extends Both
          | os.batteryLevel <= 0.8 => \battery-three-quarters
          else \battery-full
       else \battery-exclamation
+
+   setLoaded: (val) !->
+      @loaded = val
+      m.redraw!
 
    makeEnt: (ent) ->
       stat = await fs.stat ent
@@ -374,17 +406,21 @@ class Task extends Both
             darkMode: pack.darkMode
             noHeader: pack.noHeader
             skipTaskbar: pack.skipTaskbar
+            noAnimation: pack.noAnimation
             isModal: pack.isModal
+            isTrayApp: Boolean pack.isTrayApp
+            isLeftTrayApp: Boolean pack.isLeftTrayApp
             hidden: pack.hidden
             autoListen: pack.autoListen
             supportedExts: @castArr pack.supportedExts
-            isOpenSameTask: pack.isOpenSameTask
+            isOpenSameTask: Boolean pack.isOpenSameTask
             description: pack.description
             license: pack.license
          app <<<
-            pinnedTaskbar: env.pinnedTaskbar ? pack.pinnedTaskbar
+            pinnedTaskbar: env.pinnedTaskbar ? pack.pinnedTaskbar ? app.isTrayApp
             isCreateShortcut: env.isCreateShortcut ? pack.isCreateShortcut ? yes
             perms: os.createAppPerms app
+
          code = await m.fetch "#sourcePath/app.ls"
          await os.writeFile "#path/app.ls" code
          try
@@ -429,6 +465,13 @@ class Task extends Both
             status: \ask
          *  name: \tasksView
             status: \ask
+         *  name: \brightnessView
+            status: \ask
+         *  name: \nightLightView
+            status: \ask
+         *  name: \osInfoView
+            status: \granted
+            listened: yes
          *  name: \fontView
             status: \granted
             listened: yes
@@ -503,8 +546,18 @@ class Task extends Both
                | \tasksView
                   vtasks = @getVtasks!
                   await @send \perm \tasks vtasks
+               | \brightnessView
+                  await @send \perm \brightness os.brightness
+               | \nightLightView
+                  await @send \perm \nightLight os.nightLight
+               | \osInfoView
+                  await @promiseAll do
+                     @send \perm \osName os.osName
+                     @send \perm \osVersion os.osVersion
+                     @send \perm \osAuthor os.osAuthor
                | \fontView
                   await @promiseAll do
+                     @send \perm \fonts os.fonts
                      @send \perm \fontSans os.fontSans
                      @send \perm \fontSerif os.fontSerif
                      @send \perm \fontMono os.fontMono
@@ -525,17 +578,24 @@ class Task extends Both
       status
 
    send: (act, name, ...vals) ->
-      if @postMessage and !@closed
-         [mid, promise] = @addResolver!
-         @postMessage do
-            flow: \mfm
-            act: act
-            mid: mid
-            pid: @pid
-            name: name
-            vals: vals
-            \*
-         promise
+      unless @closed
+         if @isSandbox
+            if @postMessage
+               [mid, promise] = @addResolver!
+               @postMessage do
+                  flow: \mfm
+                  act: act
+                  mid: mid
+                  pid: @pid
+                  name: name
+                  vals: vals
+                  \*
+         else
+            if act in [\emit \perm]
+               if listener = @listeners[name]
+                  for callback in listener.callbacks
+                     @safeSyncCall callback, vals.0
+      promise
 
    sendAll: (act, name, ...vals) ->
       Promise.allSettled os.tasks.map (task) ~>
@@ -573,8 +633,9 @@ class Task extends Both
       unless app
          throw Error "Không tìm thấy ứng dụng '#name'"
       env.parentTask ?= @
-      env.isOpenSameTask = Boolean env.isOpenSameTask ? app.isOpenSameTask
-      if app.isOpenSameTask and env.isOpenSameTask
+      env.isTrayApp = Boolean env.isTrayApp ? app.isTrayApp ? no
+      env.isOpenSameTask = Boolean env.isTrayApp || env.isOpenSameTask ? app.isOpenSameTask ? no
+      if env.isTrayApp or (app.isOpenSameTask and env.isOpenSameTask)
          if task = os.tasks.find (.app == app)
             task.focus!
       task ?= new Task app, env
@@ -599,6 +660,7 @@ class Task extends Both
       admin: task.admin
       title: task.title
       isModal: task.isModal
+      isTrayApp: task.isTrayApp
       focusable: task.focusable
       minimized: task.minimized
       maximized: task.maximized
@@ -673,90 +735,185 @@ class Task extends Both
       @sendPermAll \desktopBgView \desktopBgImageDataUrl dataUrl
       m.redraw!
 
+   setBrightness: (val) !->
+      val = Number val
+      if isNaN val
+         throw Error "Độ sáng không hợp lệ"
+      if val < 0 or val > 1
+         throw Error "Độ sáng phải từ 0 đến 1"
+      val = Number val.toFixed 2
+      if val == os.brightness
+         return
+      os.brightness = val
+      @sendPermAll \brightnessView \brightness val
+      m.redraw!
+
+   setNightLight: (val) !->
+      val = Boolean val ? !os.nightLight
+      if val == os.nightLight
+         return
+      os.nightLight = val
+      @sendPermAll \nightLightView \nightLight val
+      m.redraw!
+
+   setFontSans: (val) !->
+      val = @castStr val .trim!
+      if val == ""
+         throw Error "Phông chữ không hợp lệ"
+      if val == os.fontSans
+         return
+      os.fontSans = val
+      @sendPermAll \fontView \fontSans val
+      m.redraw!
+
+   setFontSerif: (val) !->
+      val = @castStr val .trim!
+      if val == ""
+         throw Error "Phông chữ không hợp lệ"
+      os.fontSerif = val
+      @sendPermAll \fontView \fontSerif val
+      m.redraw!
+
+   setFontMono: (val) !->
+      val = @castStr val .trim!
+      if val == ""
+         throw Error "Phông chữ không hợp lệ"
+      if val == os.fontMono
+         return
+      os.fontMono = val
+      @sendPermAll \fontView \fontMono val
+      m.redraw!
+
+   setTextSize: (val) !->
+      val = Number val
+      if isNaN val
+         throw Error "Cỡ chữ không hợp lệ"
+      if val <= 0
+         throw Error "Cỡ chữ phải lớn hơn 0"
+      if val == os.textSize
+         return
+      os.textSize = val
+      @sendPermAll \textView \textSize val
+      m.redraw!
+
+   setTextContrast: (val) !->
+      val = Number val
+      if isNaN val
+         throw Error "Độ tương phản chữ không hợp lệ"
+      if val < 0 or val > 1
+         throw Error "Độ tương phản chữ phải từ 0 đến 1"
+      val = Number val.toFixed 2
+      if val == os.textContrast
+         return
+      os.textContrast = val
+      @sendPermAll \textView \textContrast val
+      m.redraw!
+
    focus: (skipFocusModals) !->
       if @focusable
          if os.task != @
             if @isModal and @parentTask
                @parentTask.focus yes
             @z = os.tasks.length
-            @sendPermTasksAll!
             @minimize no
-            os.updateFocusedTask yes
+            os.updateFocusedTask yes yes
             @focusModals! unless skipFocusModals
+            @sendPermTasksAll!
       else
-         os.task = void
+         os.updateFocusedTask no yes
          @focusModals! unless skipFocusModals
+         @sendPermTasksAll!
       m.redraw!
 
    focusModals: !->
-      modal = os.tasks.find (task) ~>
-         task.isModal and task.parentTask == @
-      if modal
-         modal.focus!
-      m.redraw!
+      for task in os.tasks
+         if task.isModal and task.parentTask == @
+            task.focus!
+            m.redraw!
+            break
 
    minimize: (val) !->
       val = Boolean val ? !@minimized
-      if val != @minimized
-         @minimized = val
-         @sendPerm \actionsView \minimized val
-         @sendPermTasksAll!
-         os.updateFocusedTask!
-         @updateMinimizeDom!
-         m.redraw!
+      if val == @minimized
+         return
+      @minimized = val
+      @updateMinimizeDom!
+      @sendPerm \actionsView \minimized val
+      os.updateFocusedTask !@isTrayApp, yes
+      @sendPermTasksAll!
+      m.redraw!
 
    maximize: (val) !->
       val = Boolean val ? !@maximized
-      if val != @maximized
-         @maximized = val
-         @isUnmaximized = !val
-         @sendPerm \actionsView \maximized val
-         @sendPermTasksAll!
-         m.redraw!
+      if val == @maximized
+         return
+      @maximized = val
+      @isUnmaximized = !val
+      @sendPerm \actionsView \maximized val
+      @sendPermTasksAll!
+      m.redraw!
 
    setFullscreen: (val) !->
       val = Boolean val ? !@fullscreen
-      if val != @fullscreen
-         @fullscreen = val
-         @sendPerm \fullscreenView \fullscreen val
-         @sendPermTasksAll!
-         m.redraw!
+      if val == @fullscreen
+         return
+      @fullscreen = val
+      @sendPerm \fullscreenView \fullscreen val
+      @sendPermTasksAll!
+      m.redraw!
 
    fitContentSize: (width, height) !->
-      @dom.classList.add \Task--useContentSize
+      if !@useContentSize
+         return
       unless @isSandbox
-         {width, height} = @frameEl.getBoundingClientRect!
+         @dom.classList.add \Task--useContentSizeWidth
+         width = @frameEl.offsetWidth
+         @dom.classList.remove \Task--useContentSizeWidth
       width = Math.ceil width
-      height = Math.ceil height
-      @dom.classList.remove \Task--useContentSize
       width += 8
-      height += 8
-      unless @getNoHeader!
-         height += 28
-      @x += (@width - width) / 2
-      @y += (@height - height) / 2
-      @width = width
-      @height = height
+      width = Math.round @clamp width, @minWidth, @maxWidth
+      unless @widthDefined
+         @x += (@width - width) / 2
+         @width = width
       @updateSize!
       @updateXY!
       @updateSizeDom!
       @updateXYDom!
+      unless @isSandbox
+         @dom.classList.add \Task--useContentSizeHeight
+         height = @frameEl.offsetHeight
+         @dom.classList.remove \Task--useContentSizeHeight
+      height = Math.ceil height
+      height += 8
+      unless @getNoHeader!
+         height += 28
+      height = Math.round @clamp height, @minHeight, @maxHeight
+      unless @heightDefined
+         @y += (@height - height) / 2
+         @height = height
+      @updateSize!
+      @updateXY!
+      @updateSizeDom!
+      @updateXYDom!
+      @trayPopper?update!
       @show!
       m.redraw!
 
    setDarkMode: (val) !->
       val = Boolean val ? !@darkMode
-      if val != @darkMode
-         @darkMode = val
-         @sendPerm \darkModeView \darkMode val
-         m.redraw!
+      if val == @darkMode
+         return
+      @darkMode = val
+      @sendPerm \darkModeView \darkMode val
+      m.redraw!
 
    show: !->
       if @hidden
          @hidden = no
-         @sendPermTasksAll!
          if @loaded == 0
-            @loaded = yes
+            @setLoaded yes
+         @updateMinimizeDom yes if @minimized
+         @sendPermTasksAll!
          m.redraw!
 
    alert: (message, opts) ->
@@ -810,29 +967,40 @@ class Task extends Both
       os.waitClosedTask pid
 
    close: (val) !->
-      if !@closed and !@isAskingClose
+      unless @closed or @isAskingClose
          @isAskingClose = yes
          @sendPermTasksAll!
          m.redraw!
          isClose = await @send \ask \close
          unless isClose == no
-            @send \call \closeFrme
-            @closed = yes
-            @listened = no
-            @postMessage = void
-            for , resolver of @resolvers
-               resolver.resolve!
-            if @listenedResolve
-               @listenedResolve no
-               @listenedResolve = void
-            @closedResolve val
-            @closedResolve = void
-            index = os.tasks.indexOf @
-            os.tasks.splice index, 1
-            @sendPermTasksAll!
-            os.updateFocusedTask!
+            @forceClose val, yes
          @isAskingClose = no
          @sendPermTasksAll!
+         m.redraw!
+
+   forceClose: (val, notForceCloseModals) !->
+      unless @closed
+         @send \call \closeFrme
+         @closed = yes
+         @listened = no
+         @postMessage = void
+         for , resolver of @resolvers
+            resolver.resolve!
+         if @listenedResolve
+            @listenedResolve no
+            @listenedResolve = void
+         @closedResolve val
+         @closedResolve = void
+         index = os.tasks.indexOf @
+         os.tasks.splice index, 1
+         os.updateFocusedTask yes no
+         @sendPermTasksAll!
+         for task in os.tasks
+            if task.isModal and task.parentTask == @
+               if notForceCloseModals
+                  task.close!
+               else
+                  task.forceClose!
          m.redraw!
 
    updateMinSize: !->
@@ -861,46 +1029,47 @@ class Task extends Both
          left: @x
          top: @y
 
-   updateMinimizeDom: (isFirst) !->
-      el = document.querySelector ".OS-taskbarTask--#@pid"
-      {x, y, width, height} = el.getBoundingClientRect!
-      x += Math.floor (width - 200) / 2
-      width = 200
-      if os.taskbarPosition == \top
-         y -= os.taskbarHeight
-      if @minimized
-         keyframe =
-            left: x
-            top: y
-            width: width
-            height: height
-            borderRadius: 8
+   updateMinimizeDom: (immediateHidden) !->
+      if @hidden
+         return
+      if @isTrayApp
+         @trayPopper?update!
+         @dom.hidden = @minimized
       else
-         if @maximized
+         [x, y, width, height] =
+            if @maximized
+               [0 0 os.desktopWidth, os.desktopHeight]
+            else
+               [@x, @y, @width, @height]
+         [x2, y2, width2, height2] = @getRect ".OS-taskbarTask--#@pid" yes
+         x2 += Math.floor (width2 - 200) / 2
+         width2 = 200
+         if os.taskbarPosition == \top
+            y2 -= os.taskbarHeight
+         if @minimized
+            translateX = x2 - x - width / 2 + width2 / 2
+            translateY = y2 - y - height / 2 + height2 / 2
+            scaleX = width2 / width
+            scaleY = height2 / height
             keyframe =
-               left: 0
-               top: 0
-               width: \100%
-               height: \100%
-               borderRadius: 0
+               translate: "#{translateX}px #{translateY}px"
+               scale: "#scaleX #scaleY"
          else
             keyframe =
-               left: @x
-               top: @y
-               width: @width
-               height: @height
-               borderRadius: 8
-      anim = @dom.animate do
-         *  m.style keyframe
-         *  duration: 500
-            easing: @easeOut
-            fill: \forwards if @minimized
-      @dom.hidden = isFirst
-      if @minimized
-         @minimizeAnim = anim
-      else
-         @minimizeAnim?reverse!
-         @minimizeAnim = void
+               translate: 0
+               scale: 1
+         anim = @dom.animate do
+            *  m.style keyframe
+            *  duration: 500
+               easing: @easeOut
+               fill: \forwards if @minimized
+         @dom.hidden = immediateHidden
+         if @minimized
+            @minimizeAnim = anim
+         else
+            @minimizeAnim?reverse!
+            @minimizeAnim = void
+         await anim.finished
 
    addRectXYByFrameEl: (rect) !->
       frameRect = @frameEl.getBoundingClientRect!
@@ -930,9 +1099,9 @@ class Task extends Both
 
    loadedFrme: !->
       if @hidden
-         @loaded = 0
+         @setLoaded 0
       else
-         @loaded = yes
+         @setLoaded yes
       m.redraw!
 
    mousedownFrme: (eventData) !->
@@ -1045,10 +1214,23 @@ class Task extends Both
          os.selectMenuClose!
          os.selectMenuClose = void
 
-   showTooltip: (rect, text, isDark, isAddFrameXY) !->
+   showDropdownMenu: (rect, items, placement, flips, isAddFrameXY) ->
+      [close, promise] = @showMenu rect, items,,, isAddFrameXY, \OS-dropdownMenu,
+         placement: placement
+         flips: flips
+      os.dropdownMenuClose = close
+      promise
+
+   closeDropdownMenu: !->
+      if os.dropdownMenuClose
+         os.dropdownMenuClose!
+         os.dropdownMenuClose = void
+
+   showTooltip: (rect, text, isDark, isAddFrameXY, timer = 200) !->
+      text = @castStr text
       if text.trim!
          @closeTooltip!
-         @tooltipTimerId = setTimeout !~>
+         showTooltip = !~>
             vals = @formatTooltip text
             text := vals.0
             placements = vals.1
@@ -1074,10 +1256,13 @@ class Task extends Both
                   popperEl.remove!
                   popper.destroy!
                   popper := void
-         , 200
+         if timer
+            @tooltipTimeoutId = setTimeout showTooltip, timer
+         else
+            showTooltip!
 
    closeTooltip: !->
-      clearTimeout @tooltipTimerId
+      clearTimeout @tooltipTimeoutId
       if os.tooltipClose
          os.tooltipClose!
          os.tooltipClose = void
@@ -1121,6 +1306,12 @@ class Task extends Both
             click: !~>
                @maximize!
          ,,
+         *  text: "Buộc đóng"
+            icon: \octagon-xmark
+            color: \red
+            click: !~>
+               @forceClose!
+         ,,
          *  text: "Đóng"
             icon: \xmark
             color: \red
@@ -1141,6 +1332,10 @@ class Task extends Both
          event.target.setPointerCapture event.pointerId
          sideX = event.target.dataset.x
          sideY = event.target.dataset.y
+         if @trayPopper
+            rect = @dom.getBoundingClientRect!
+            @x = rect.x
+            @y = rect.y
          right = @x + @width
          bottom = @y + @height
          @resizeData =
@@ -1175,19 +1370,32 @@ class Task extends Both
             @resizeData.moveY = moveY
          @updateSizeDom!
          @updateXYDom!
+         @trayPopper?update!
 
    onlostpointercaptureResize: (event) !->
       @resizeData = void
 
-   onbeforeremove: ->
+   onbeforeremove: !->
       @dom.classList.add \Task--closed
       @dom.inert = yes
-      anim = @dom.animate do
-         *  scale: 0.9
-            opacity: 0
-         *  duration: 500
-            easing: @easeOut
-      anim.finished
+      if @isTrayApp
+         @dom.hidden = yes
+      if @minimized
+         await @wait 500
+      else
+         anim = @dom.animate do
+            *  scale: 0.9
+               opacity: 0
+            *  duration: 500
+               easing: @easeOut
+         await anim.finished
+      unless @isSandbox
+         m.mount @frameEl
+
+   onremove: !->
+      if @trayPopper
+         @trayPopper.destroy!
+         @trayPopper = void
 
    view: (vnode, attrs = {}, vdom) ->
       m \.Task,
@@ -1199,6 +1407,8 @@ class Task extends Both
             "Task--unmaximized": @isUnmaximized
             "Task--fullscreen": @fullscreen
             "Task--noHeader": @getNoHeader!
+            "Task--noAnimation": @noAnimation
+            "Task--isTrayApp": @isTrayApp
             "Task--loading": !@loaded
             attrs.class
          style: m.style do
